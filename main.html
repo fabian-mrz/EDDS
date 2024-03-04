@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: #282828;
+            font-family: 'Arial', sans-serif;
+            /* change as desired */
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100vh;
+        }
+
+        .player {
+            width: 168px;
+            height: 202px;
+            /* increased height to accommodate player name */
+            text-align: center;
+            margin: 14px;
+        }
+
+        .player-name {
+            margin-bottom: 0;
+            font-size: 20px;
+        }
+
+        .score-box {
+            background-color: blue;
+            width: 168px;
+            height: 168px;
+            border: 1px solid black;
+            margin-top: 7px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-box p {
+            font-size: 6.72em;
+            /* adjust as needed */
+            font-weight: bold;
+        }
+
+
+        .song-title {
+            background-color: blue;
+            width: 736px;
+            height: 90px;
+            border: 1px solid black;
+            text-align: center;
+            margin: 42px auto 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .song-title p {
+            font-weight: bold;
+        }
+
+
+        .players-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Responsive CSS */
+        @media (max-width: 768px) {
+            .container {
+                justify-content: center;
+            }
+
+            .player {
+                width: 96px;
+                height: 120px;
+            }
+
+            .player-name {
+                font-size: 16px;
+            }
+
+            .score-box {
+                width: 96px;
+                height: 96px;
+            }
+
+            .song-title {
+                width: 360px;
+                height: 48px;
+                font-size: 22px;
+            }
+        }
+
+        /* END: Added CSS */
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- BEGIN: Added players-container div -->
+        <div class="players-container">
+            <div class="player">
+                <p class="player-name">Spieler 1</p>
+                <div class="score-box">
+                    <p>0</p>
+                </div>
+            </div>
+            <div class="player">
+                <p class="player-name">Spieler 2</p>
+                <div class="score-box">
+                    <p>0</p>
+                </div>
+            </div>
+            <div class="player">
+                <p class="player-name">Spieler 3</p>
+                <div class="score-box">
+                    <p>0</p>
+                </div>
+            </div>
+            <div class="player">
+                <p class="player-name">Spieler 4</p>
+                <div class="score-box">
+                    <p>0</p>
+                </div>
+            </div>
+        </div>
+        <!-- END: Added players-container div -->
+        <div class="song-title">
+            <p>Titel des Songs</p>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript code for dynamic behavior
+        // You can add your logic here
+    </script>
+</body>
+
+</html>
