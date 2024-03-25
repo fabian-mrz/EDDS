@@ -1,0 +1,66 @@
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+
+    .buzzer-button {
+        width: 80%;
+        height: 80vh;
+        font-size: 2em;
+        border: 30px solid blue;
+        border-radius: 10%;
+        background-color: transparent;
+        color: black;
+    }
+
+    .buzzer-button.success {
+        border-color: green;
+    }
+
+    .buzzer-button.error {
+        border-color: red;
+    }
+</style>
+
+<body>
+    <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
+
+    <script>
+        window.onload = function () {
+            fetch('/check-buzzer-onload/buzzer1')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.isOccupied) {
+                        window.location.href = '/index.html';
+                    }
+                });
+        };
+        function buzzerPressed() {
+            fetch('/buzzer-pressed/buzzer1', {
+                method: 'POST',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let buzzerButton = document.getElementById('buzzerButton');
+                    if (data.success) {
+                        buzzerButton.classList.remove('error');
+                        buzzerButton.classList.add('success');
+                    } else {
+                        buzzerButton.classList.remove('success');
+                        buzzerButton.classList.add('error');
+                        setTimeout(() => {
+                            buzzerButton.classList.remove('error');
+                        }, 3000);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>

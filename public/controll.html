@@ -1,0 +1,28 @@
+<button id="nextButton">Weiter</button>
+<button id="rightButton">Richtig</button>
+<button id="wrongButton">Falsch</button>
+<label for="buzzerId">Buzzer ID:</label>
+<input type="text" id="buzzerId" name="buzzerId">
+<button id="resetButton">Reset Buzzer</button>
+
+<script>
+    document.getElementById('nextButton').addEventListener('click', function() {
+        fetch('/control/next', { method: 'POST' })
+        .catch((error) => { console.error('Error:', error); });
+    });
+    
+    document.getElementById('rightButton').addEventListener('click', function() {
+        fetch('/control/right', { method: 'POST' })
+        .catch((error) => { console.error('Error:', error); });
+    });
+    
+    document.getElementById('wrongButton').addEventListener('click', function() {
+        fetch('/control/wrong', { method: 'POST' })
+        .catch((error) => { console.error('Error:', error); });
+    });
+    document.getElementById('resetButton').addEventListener('click', function() {
+        let buzzerId = document.getElementById('buzzerId').value;
+        fetch('/reset-buzzer/' + buzzerId, { method: 'POST' })
+        .catch((error) => { console.error('Error:', error); });
+    });
+</script>

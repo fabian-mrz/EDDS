@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Index Page</title>
+</head>
+
+<body>
+    <input type="text" id="name" placeholder="Enter your name">
+    <button onclick="joinBuzzer()">Join Buzzer</button>
+
+    <script>
+        function joinBuzzer() {
+            var name = document.getElementById('name').value;
+            var request = new XMLHttpRequest();
+            request.open("POST", "/join-buzzer", true);
+            request.setRequestHeader("Content-Type", "application/json");
+            request.onreadystatechange = function () {
+                if (request.readyState == 4 && request.status == 200) {
+                    var response = JSON.parse(request.responseText);
+                    if (response.buzzer) {
+                        window.location.href = response.buzzer;
+                    } else {
+                        alert("All buzzers are occupied");
+                    }
+                }
+            };
+            request.send(JSON.stringify({ name: name }));
+        }
+    </script>
+</body>
+
+</html>
