@@ -11,13 +11,11 @@ const port = 8080;
 const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
 // Definieren Sie die Spieler
 let players = [
-    { name: 'Spieler 1', buzzer: 'buzzer1', canPress: true, pressed: false, score: 0 },
-    { name: 'Spieler 2', buzzer: 'buzzer2', canPress: true, pressed: false, score: 0 },
-    { name: 'Spieler 3', buzzer: 'buzzer3', canPress: true, pressed: false, score: 0 },
-    { name: 'Spieler 4', buzzer: 'buzzer4', canPress: true, pressed: false, score: 0 },
+    { name: 'Spieler 1', buzzer: 'buzzer1', canPress: true, pressed: false, occupied: 0, score: 0 },
+    { name: 'Spieler 2', buzzer: 'buzzer2', canPress: true, pressed: false, occupied: 0, score: 0 },
+    { name: 'Spieler 3', buzzer: 'buzzer3', canPress: true, pressed: false, occupied: 0, score: 0 },
+    { name: 'Spieler 4', buzzer: 'buzzer4', canPress: true, pressed: false, occupied: 0, score: 0 },
 ];
-let buzzerCounters = {};
-let buzzerPressed = false;
 
 //authentification spotify
 var scopes = ['user-read-playback-state', 'user-modify-playback-state'],
@@ -35,32 +33,6 @@ app.get('/login', (req, res) => {
     res.redirect(authorizeURL);
 });
 
-//Who pressed first
-function checkBuzzer(buzzerName) {
-    return (req, res, next) => {
-        if (buzzerPressed) {
-            res.status(400).send('Ein Spieler hat bereits den Buzzer gedrückt.');
-        } else {
-            let player = players.find(player => player.buzzer === buzzerName);
-            if (player && player.canPress) {
-                player.pressed = true;
-                buzzerPressed = true;
-                console.log(`${player.name} hat den Buzzer gedrückt.`);
-            }
-            next();
-        }
-    };
-}
-
-
-//Reset buzzer
-function resetBuzzer(buzzerName) {
-    let player = players.find(player => player.buzzer === buzzerName);
-    if (player) {
-        player.pressed = false;
-    }
-    console.log(`Buzzer ${buzzerName} wurde zurückgesetzt.`);
-}
 
 
 //controll.html
@@ -97,48 +69,39 @@ app.post('/control/next', (req, res) => {
     res.sendStatus(200);
 });
 
-app.post('/reset-buzzer/:buzzerId', (req, res) => {
-    let buzzerId = req.params.buzzerId;
-    if (buzzerCounters.hasOwnProperty(buzzerId)) {
-        buzzerCounters[buzzerId] = false;
-        console.log(`Resetting buzzer ${buzzerId}`);
-        res.json({ success: true });
-    } else {
-        res.json({ success: false, message: 'Buzzer not found' });
-    }
-});
 
 //buzzerX.hmtl
-app.post('/buzzer-pressed/:buzzer', (req, res) => {
-    let buzzerName = req.params.buzzer;
-    let player = players.find(player => player.buzzer === buzzerName);
+app.post('/reset-buzzer/:playerName', (req, res) => {
+    let playerName = req.params.playerName;
+    let player = players.find(player => player.name === playerName);
     if (player) {
-        if (player.canPress && !buzzerPressed) {
-            player.pressed = true;
-            player.canPress = false;
-            buzzerPressed = true;
-            console.log(`${player.name} hat den Buzzer gedrückt.`);
-            res.json({ success: true });
-            pausePlayback(spotifyApi);
-        } else {
-            res.json({ success: false, message: 'Dieser Spieler kann den Buzzer nicht drücken.' });
-        }
+        player.occupied = 0;
+        console.log(`${player.name}'s buzzer has been reset.`);
+        res.sendStatus(200);
+        console.log(players);
     } else {
-        res.json({ success: false, message: 'Unbekannter Buzzer.' });
+        console.log(`No player found with name ${playerName}`);
+        console.log(players);
+        res.sendStatus(404);
     }
 });
 
 
+// Check if a buzzer is occupied and set it as occupied if it's not
 app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
     let buzzerId = req.params.buzzerId;
-    if (buzzerCounters[buzzerId] === false) {
-        buzzerCounters[buzzerId] = true;
-        res.json({ isOccupied: false });
+    let player = players.find(player => player.buzzer === buzzerId);
+    if (player) {
+        player.occupied++;
+        if (player.occupied <= 2) {
+            res.json({ isOccupied: false });
+        } else {
+            res.json({ isOccupied: true });
+        }
     } else {
-        buzzerCounters[buzzerId] = false;
-        res.json({ isOccupied: true });
+        console.log(`No player found with buzzer ${buzzerId}`);
+        res.sendStatus(404);
     }
-    console.log(buzzerCounters);
 });
 
 
@@ -148,18 +111,27 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //index.html
+// Join a buzzer and set it as occupied
 app.post('/join-buzzer', (req, res) => {
     let name = req.body.name;
-    let availablePlayer = players.find(player => !player.pressed);
-    if (availablePlayer) {
-        availablePlayer.pressed = true;
-        console.log(`${name} has joined ${availablePlayer.buzzer}`);
-        res.json({ buzzer: `/${availablePlayer.buzzer}.html` });
-    } else {
-        console.log(`No available buzzer for ${name}`);
+    let existingPlayer = players.find(player => player.name === name);
+    if (existingPlayer) {
+        console.log(`Player with name ${name} already exists`);
         res.json({ buzzer: null });
+    } else {
+        let availablePlayer = players.find(player => player.occupied === 0);
+        if (availablePlayer) {
+            availablePlayer.name = name;
+            availablePlayer.occupied = 1;
+            console.log(`${name} has joined ${availablePlayer.buzzer}`);
+            res.json({ buzzer: `/${availablePlayer.buzzer}.html` });
+        } else {
+            console.log(`No available buzzer for ${name}`);
+            res.json({ buzzer: null });
+        }
     }
 });
+
 
 //Spotify
 

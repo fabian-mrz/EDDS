@@ -4,7 +4,6 @@
 <label for="buzzerId">Buzzer ID:</label>
 <input type="text" id="buzzerId" name="buzzerId">
 <button id="resetButton">Reset Buzzer</button>
-
 <script>
     document.getElementById('nextButton').addEventListener('click', function() {
         fetch('/control/next', { method: 'POST' })

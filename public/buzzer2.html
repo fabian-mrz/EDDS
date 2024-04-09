@@ -35,7 +35,7 @@
             fetch('/check-buzzer-onload/buzzer2')
                 .then(response => response.json())
                 .then(data => {
-                    if (!data.isOccupied) {
+                    if (data.isOccupied) {
                         window.location.href = '/index.html';
                     }
                 });
