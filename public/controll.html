@@ -1,27 +1,74 @@
-<button id="nextButton">Weiter</button>
-<button id="rightButton">Richtig</button>
-<button id="wrongButton">Falsch</button>
-<label for="buzzerId">Buzzer ID:</label>
-<input type="text" id="buzzerId" name="buzzerId">
-<button id="resetButton">Reset Buzzer</button>
-<script>
-    document.getElementById('nextButton').addEventListener('click', function() {
-        fetch('/control/next', { method: 'POST' })
-        .catch((error) => { console.error('Error:', error); });
-    });
-    
-    document.getElementById('rightButton').addEventListener('click', function() {
-        fetch('/control/right', { method: 'POST' })
-        .catch((error) => { console.error('Error:', error); });
-    });
-    
-    document.getElementById('wrongButton').addEventListener('click', function() {
-        fetch('/control/wrong', { method: 'POST' })
-        .catch((error) => { console.error('Error:', error); });
-    });
-    document.getElementById('resetButton').addEventListener('click', function() {
-        let buzzerId = document.getElementById('buzzerId').value;
-        fetch('/reset-buzzer/' + buzzerId, { method: 'POST' })
-        .catch((error) => { console.error('Error:', error); });
-    });
-</script>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Buzzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            flex-direction: column; /* Add this line to align items vertically */
+            gap: 20px; /* Add this line to create space between items */
+        }
+
+        button, input {
+            font-size: 1.5em;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: black;
+            cursor: pointer;
+            margin: 10px 0; /* Add this line to create space between buttons */
+        }
+
+        input {
+            background-color: white; /* Change the background color of the input field */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="nextButton">Weiter</button>
+    <button id="rightButton">Richtig</button>
+    <button id="wrongButton">Falsch</button>
+    <label for="buzzerId">Buzzer ID:</label>
+    <input type="text" id="buzzerId" name="buzzerId">
+    <button id="resetButton">Reset Buzzer</button>
+
+    <script>
+        document.getElementById('nextButton').addEventListener('click', function () {
+            fetch('/control/next', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+
+        document.getElementById('rightButton').addEventListener('click', function () {
+            fetch('/control/right', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+
+        document.getElementById('wrongButton').addEventListener('click', function () {
+            fetch('/control/wrong', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+        document.getElementById('resetButton').addEventListener('click', function () {
+            let buzzerId = document.getElementById('buzzerId').value;
+            fetch('/reset-buzzer/' + buzzerId, { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+    </script>
+</body>
+
+</html>

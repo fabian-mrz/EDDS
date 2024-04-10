@@ -124,15 +124,46 @@
                 </div>
             </div>
             <div class="song-title">
-                <p>Titel des Songs</p>
+                <p id="song-title">Titel des Songs</p>
+                <p id="artist-name">Artist des Songs</p>
             </div>
         </div>
     </div>
 
 
     <script>
-        // JavaScript code for dynamic behavior
-        // You can add your logic here
+        // Establish a WebSocket connection
+        const socket = new WebSocket('ws://localhost:8081');
+
+        // Listen for messages
+        socket.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+
+            // Log the received data to the console
+            console.log('Received data:', data);
+
+            // Update the song title and artist name
+            if (data.trackName && data.artistName) {
+                document.getElementById('song-title').innerHTML = data.trackName;
+                document.getElementById('artist-name').innerHTML = data.artistName;
+            }
+
+            const songTitleDiv = document.querySelector('.song-title');
+            const scoreBoxDiv = document.querySelector('.score-box');
+
+            if (data.songGuessed) {
+                songTitleDiv.style.display = 'block';
+                scoreBoxDiv.style.backgroundImage = "url('cover.jpeg')";
+            } else {
+                songTitleDiv.style.display = 'none';
+                // Update the background image
+                if (data.albumCoverUrl) {
+                    scoreBoxDiv.style.backgroundImage = `url('${data.albumCoverUrl}')`;
+                } else {
+                    scoreBoxDiv.style.backgroundImage = "none";
+                }
+            }
+        });
     </script>
 </body>
 
