@@ -97,6 +97,7 @@ app.post('/control/wrong', (req, res) => {
     if (player) {
         player.pressed = false;
     }
+    buzzerPressed = false;
     res.sendStatus(200);
 });
 
