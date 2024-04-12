@@ -44,7 +44,7 @@ var scopes = ['user-read-playback-state', 'user-modify-playback-state'],
 const spotifyApi = new SpotifyWebApi({
     clientId: config.spotify.clientId,
     clientSecret: config.spotify.clientSecret,
-    redirectUri: 'http://localhost:8080/callback'
+    redirectUri: 'http://192.168.1.90:8080/callback'
 });
 
 app.get('/login', (req, res) => {
@@ -60,10 +60,9 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
     let player = players.find(player => player.buzzer === buzzer);
 
     if (player) {
-        if (player.canPress && !buzzerPressed) { // Wenn der Spieler drücken kann und der Buzzer noch nicht gedrückt wurde
+        if (player && player.canPress) {
             player.pressed = true;
             player.canPress = false;
-            buzzerPressed = true;
             console.log(`${player.name} hat den Buzzer gedrückt.`);
             res.json({ success: true });
             pausePlayback(spotifyApi);
@@ -79,14 +78,13 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
 
 //controll.html
 app.post('/control/right', (req, res) => {
-    jumpToDrop(spotifyApi);
-    startPlayback(spotifyApi);
     let player = players.find(player => player.pressed === true);
     if (player) {
-        // Send a message to all connected clients
-        broadcast({ songGuessed: true });
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
+        player.pressed = false;
+        broadcast({ type: 'players-updated', players });
+        broadcast({ songGuessed: true });
     }
     res.sendStatus(200);
 });
@@ -175,6 +173,9 @@ app.post('/join-buzzer', (req, res) => {
             availablePlayer.occupied = 1;
             console.log(`${name} has joined ${availablePlayer.buzzer}`);
             res.json({ buzzer: `/${availablePlayer.buzzer}.html` });
+
+            // WebSocket-Nachricht senden
+            broadcast({ type: 'players-updated', players })
         } else {
             console.log(`No available buzzer for ${name}`);
             res.json({ buzzer: null });
@@ -369,6 +370,6 @@ app.get('/buzzer4.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/buzzer4.html'));
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+app.listen(port, '192.168.1.90', () => {
+    console.log(`Server running at http://192.168.1.90:${port}`);
 });
