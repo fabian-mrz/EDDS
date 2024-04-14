@@ -74,14 +74,13 @@ app.post('/update-score', (req, res) => {
 
 app.post('/buzzer-pressed/:buzzer', (req, res) => {
     let buzzer = req.params.buzzer;
-    console.log('Buzzer pressed:', buzzer);
     let player = players.find(player => player.buzzer === buzzer);
 
     if (player) {
-        if (player && player.canPress) {
+        if (player && player.canPress && !buzzerPressed) {
+            buzzerPressed = true;
             player.pressed = true;
             player.canPress = false;
-            console.log(`${player.name} hat den Buzzer gedrückt.`);
             res.json({ success: true });
             broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
             pausePlayback(spotifyApi);
@@ -116,6 +115,7 @@ app.post('/control/wrong', (req, res) => {
     startPlayback(spotifyApi);
     let player = players.find(player => player.pressed === true);
     if (player) {
+        buzzerPressed = false;
         player.pressed = false;
         broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: false }); // Send the buzzer that was pressed and true to all connected clients
     }
