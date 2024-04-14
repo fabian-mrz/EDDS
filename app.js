@@ -8,6 +8,8 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const WebSocket = require('ws');
 const port = 8080;
 
+app.use(express.json());
+
 // Create a WebSocket server
 const wss = new WebSocket.Server({ port: 8081 });
 
@@ -25,7 +27,7 @@ async function broadcast(data) {
 const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
 const config2 = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
 
-// Definieren Sie die Spieler
+// Spielerdaten
 let players = [
     { name: 'Spieler 1', buzzer: 'buzzer1', canPress: true, pressed: false, occupied: 0, score: 0 },
     { name: 'Spieler 2', buzzer: 'buzzer2', canPress: true, pressed: false, occupied: 0, score: 0 },
@@ -33,7 +35,7 @@ let players = [
     { name: 'Spieler 4', buzzer: 'buzzer4', canPress: true, pressed: false, occupied: 0, score: 0 },
 ];
 
-let buzzerPressed = false; // Wurde der Buzzer bereits gedrückt?
+let buzzerPressed = false; // Wurde ein Buzzer bereits gedrückt?
 
 
 
@@ -55,8 +57,24 @@ app.get('/login', (req, res) => {
 spotifyApi.setAccessToken(config2.spotify.access_token);
 spotifyApi.setRefreshToken(config2.spotify.refresh_token);
 
+
+//routes
+app.post('/update-score', (req, res) => {
+    console.log(req.body.name
+        , req.body.score);
+    let player = players.find(player => player.name === req.body.name);
+    if (player) {
+        player.score = parseInt(req.body.score);
+        broadcast({ type: 'players-updated', players });
+        res.status(200).json({ message: 'Score updated successfully' });
+    } else {
+        res.status(400).json({ error: 'No player found with the provided name.' });
+    }
+});
+
 app.post('/buzzer-pressed/:buzzer', (req, res) => {
     let buzzer = req.params.buzzer;
+    console.log('Buzzer pressed:', buzzer);
     let player = players.find(player => player.buzzer === buzzer);
 
     if (player) {
@@ -65,6 +83,7 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
             player.canPress = false;
             console.log(`${player.name} hat den Buzzer gedrückt.`);
             res.json({ success: true });
+            broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
             pausePlayback(spotifyApi);
         } else {
             res.json({ success: false, message: 'Dieser Spieler kann den Buzzer nicht drücken.' });
@@ -78,12 +97,16 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
 
 //controll.html
 app.post('/control/right', (req, res) => {
+    console.log(players);
     let player = players.find(player => player.pressed === true);
     if (player) {
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
         player.pressed = false;
+        jumpToDrop(spotifyApi);
+        startPlayback(spotifyApi);
         broadcast({ type: 'players-updated', players });
+        broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: true }); // Send the buzzer that was pressed and true to all connected clients
         broadcast({ songGuessed: true });
     }
     res.sendStatus(200);
@@ -94,6 +117,7 @@ app.post('/control/wrong', (req, res) => {
     let player = players.find(player => player.pressed === true);
     if (player) {
         player.pressed = false;
+        broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: false }); // Send the buzzer that was pressed and true to all connected clients
     }
     buzzerPressed = false;
     res.sendStatus(200);
@@ -154,8 +178,8 @@ app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
 
 
 const bodyParser = require('body-parser');
+const { start } = require('repl');
 app.use(bodyParser.json());
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 //index.html

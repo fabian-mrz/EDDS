@@ -15,11 +15,14 @@
             align-items: center;
             height: 100vh;
             background-color: #f0f0f0;
-            flex-direction: column; /* Add this line to align items vertically */
-            gap: 20px; /* Add this line to create space between items */
+            flex-direction: column;
+            /* Add this line to align items vertically */
+            gap: 20px;
+            /* Add this line to create space between items */
         }
 
-        button, input {
+        button,
+        input {
             font-size: 1.5em;
             padding: 10px 20px;
             border: none;
@@ -27,11 +30,13 @@
             background-color: #007BFF;
             color: black;
             cursor: pointer;
-            margin: 10px 0; /* Add this line to create space between buttons */
+            margin: 10px 0;
+            /* Add this line to create space between buttons */
         }
 
         input {
-            background-color: white; /* Change the background color of the input field */
+            background-color: white;
+            /* Change the background color of the input field */
         }
 
         button:hover {
@@ -47,8 +52,31 @@
     <label for="buzzerId">Buzzer ID:</label>
     <input type="text" id="buzzerId" name="buzzerId">
     <button id="resetButton">Reset Buzzer</button>
+    <label for="playerName">Player Name:</label>
+    <input type="text" id="playerName" name="playerName">
+    <label for="playerScore">Player Score:</label>
+    <input type="text" id="playerScore" name="playerScore">
+    <button id="updateScoreButton">Update Score</button>
+
 
     <script>
+        document.getElementById('updateScoreButton').addEventListener('click', function () {
+            let playerName = document.getElementById('playerName').value;
+            let playerScore = document.getElementById('playerScore').value;
+
+            fetch('/update-score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: playerName, score: playerScore }),
+            })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        });
         document.getElementById('nextButton').addEventListener('click', function () {
             fetch('/control/next', { method: 'POST' })
                 .catch((error) => { console.error('Error:', error); });

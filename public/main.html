@@ -3,8 +3,32 @@
 
 <head>
     <style>
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 255, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        * {
+            /* This will apply a transition to all properties of all elements */
+            transition: all 0.5s ease;
+        }
+
         body {
-            background-color: #232323;
+            /* Radial gradient from light gray at the center to dark gray at the edges */
+            background: radial-gradient(circle at center, #515151, #1a1a1a);
             font-family: 'Arial', sans-serif;
             color: white;
         }
@@ -35,7 +59,7 @@
             background-color: #262672;
             width: 168px;
             height: 168px;
-            border: 1px solid black;
+            border: 1px solid rgb(0, 0, 0);
             margin-top: 5%;
             display: flex;
             justify-content: center;
@@ -112,32 +136,32 @@
         <div class="players-container">
             <div class="player">
                 <p class="player-name">Spieler1</p>
-                <div class="score-box">
+                <div class="score-box" id="buzzer1">
                     <p class="player-score">0</p>
                 </div>
             </div>
             <div class="player">
                 <p class="player-name">Spieler2</p>
-                <div class="score-box">
+                <div class="score-box" id="buzzer2">
                     <p class="player-score">0</p>
                 </div>
             </div>
             <div class="player">
                 <p class="player-name">Spieler 3</p>
-                <div class="score-box">
+                <div class="score-box" id="buzzer3">
                     <p class="player-score">0</p>
                 </div>
             </div>
             <div class="player">
                 <p class="player-name">Spieler 4</p>
-                <div class="score-box">
+                <div class="score-box" id="buzzer4">
                     <p class="player-score">0</p>
                 </div>
             </div>
         </div>
         <div class="song-title">
-            <p id="song-title">Titel des Songs</p>
-            <p id="artist-name">Artist des Songs</p>
+            <p id="song-title"></p>
+            <p id="artist-name"></p>
         </div>
     </div>
 
@@ -162,6 +186,35 @@
             const data = JSON.parse(event.data);
 
             console.log('Received data:', data);
+
+            if (data.type == "buzzer-pressed") {
+                console.log('Buzzer pressed by:', data.buzzer);
+                // Find the score box of the player who pressed the buzzer
+                let scoreBox = document.getElementById(data.buzzer);
+                // Change the border color based on the pressed value
+                if (scoreBox) {
+                    switch (data.pressed) {
+                        case "pressed":
+                            scoreBox.style.borderColor = 'yellow';
+                            scoreBox.classList.add('pulse');
+                            break;
+                        case true:
+                            scoreBox.classList.remove('pulse');
+                            scoreBox.style.borderColor = 'green';
+                            setTimeout(() => {
+                                scoreBox.style.borderColor = '';
+                            }, 5000);
+                            break;
+                        case false:
+                            scoreBox.classList.remove('pulse');
+                            scoreBox.style.borderColor = 'red';
+                            setTimeout(() => {
+                                scoreBox.style.borderColor = '';
+                            }, 5000);
+                            break;
+                    }
+                }
+            }
 
             if (data.type === 'players-updated') {
                 const playerNameElements = document.querySelectorAll('.player-name');
@@ -192,12 +245,10 @@
 
             if (songTitleDiv && artistNameDiv && scoreBoxDiv) {
                 if (data.songGuessed) {
-                    console.log("duck" + data.songGuessed);
                     songTitleDiv.innerHTML = trackName;
                     artistNameDiv.innerHTML = artistName;
                     scoreBoxDiv.style.backgroundImage = `url('${albumCoverUrl}')`;
                 } else {
-                    console.log("false" + data.songGuessed);
                     songTitleDiv.innerHTML = '';
                     artistNameDiv.innerHTML = '';
                     scoreBoxDiv.style.backgroundImage = "url('cover.png')";
