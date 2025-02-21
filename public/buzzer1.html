@@ -18,22 +18,16 @@
 
         .buzzer-button {
             width: 80vw;
-            /* Responsive width */
             max-width: 300px;
-            /* Maximum width */
             height: 80vw;
-            /* Responsive height */
             max-height: 300px;
-            /* Maximum height */
             font-size: 1.5em;
-            /* Adjusted font size */
             border: 10px solid var(--spotify-green);
-            /* Adjusted border size */
             border-radius: 50%;
             background-color: rgba(255, 255, 255, 0.9);
             color: var(--spotify-black);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: center;
@@ -41,11 +35,10 @@
             text-transform: uppercase;
             font-weight: bold;
             letter-spacing: 2px;
-        }
-
-        .buzzer-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+            -webkit-tap-highlight-color: transparent;
+            /* Remove tap highlight on mobile */
+            user-select: none;
+            /* Prevent text selection */
         }
 
         .buzzer-button:active {
@@ -56,7 +49,7 @@
 
         .buzzer-button.waiting {
             border-color: #ff9800;
-            background-color: rgba(255, 152, 0, 0.5);
+            background-color: rgba(255, 152, 0, );
             color: var(--white);
             animation: pulse 1s infinite;
         }
@@ -72,7 +65,6 @@
             border-color: #dc3545;
             background-color: #dc3545;
             color: var(--white);
-            animation: fadeToGrey 1s forwards;
         }
 
         .buzzer-button.right {
@@ -266,6 +258,11 @@
                 document.cookie = 'playerName=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
                 window.location.href = data.redirect;
             }
+            else if (data.type === 'track-revealed' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+            }
             else if (data.type === 'new-song' && data.trackInfo) {
                 // Update track info with hidden values
                 document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
@@ -284,10 +281,16 @@
                 }
             }
             else if (data.songGuessed === false && data.buzzer === buzzerId) {
-                // Wrong answer - show red fading to grey
+                // Wrong answer - show red first, then fade to disabled
                 buzzerButton.classList.remove('waiting');
-                buzzerButton.classList.add('wrong', 'disabled');
+                buzzerButton.classList.add('wrong');
                 canPress = false; // This player can't press anymore
+
+                // Wait 5 seconds, then switch to disabled state
+                setTimeout(() => {
+                    buzzerButton.classList.remove('wrong');
+                    buzzerButton.classList.add('disabled');
+                }, 5000);
             }
             else if (data.type === 'disable-buzzer' && data.buzzer === buzzerId) {
                 // Disable buzzer when someone else got it right
@@ -297,7 +300,7 @@
             }
             else if (data.type === 'can-press-again' && data.buzzer === buzzerId) {
                 // Other players can press again after someone guessed wrong
-                buzzerButton.classList.remove('disabled');
+                buzzerButton.classList.remove('waiting', 'right', 'wrong', 'disabled');
                 canPress = true;
             }
             else if (data.type === 'round-end' && data.buzzer === buzzerId) {
@@ -313,6 +316,7 @@
         };
 
         window.onload = function () {
+            buzzerButton.classList.add('disabled')
             fetch(`/check-buzzer-onload/${buzzerId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -332,6 +336,9 @@
             const buzzerButton = document.getElementById('buzzerButton');
             buzzerButton.classList.add('waiting');
             canPress = false;
+
+            // remove disabled class
+            buzzerButton.classList.remove('disabled');
 
             fetch(`/buzzer-pressed/${buzzerId}`, {
                 method: 'POST',

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Song Quiz - Overview</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .container {
+            padding: 2rem;
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+
+        .track-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .cover-art {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 1rem;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .cover-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .track-text {
+            margin: 0.5rem 0;
+            font-size: 1.5em;
+            color: var(--spotify-black);
+        }
+
+        .track-name {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .player-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .player-score {
+            font-size: 2em;
+            color: var(--spotify-green);
+        }
+
+        .player-card.pressed {
+            border: 3px solid #ff9800;
+            animation: pulse 1s infinite;
+        }
+
+        .player-card.right {
+            border: 3px solid var(--spotify-green);
+            background-color: rgba(29, 185, 84, 0.1);
+        }
+
+        .player-card.wrong {
+            border: 3px solid #dc3545;
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .player-card.disabled {
+            opacity: 0.7;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="track-info">
+            <div class="cover-art">
+                <img id="albumCover" src="/cover.png" alt="Album Cover">
+            </div>
+            <div class="track-text track-name" id="trackName">???</div>
+            <div class="track-text" id="artistName">???</div>
+        </div>
+
+        <div class="players-grid" id="playersGrid">
+            <!-- Players will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket('ws://192.168.178.45:8081');
+
+        function updatePlayers(players) {
+            const playersGrid = document.getElementById('playersGrid');
+            playersGrid.innerHTML = '';
+
+            players.sort((a, b) => b.score - a.score).forEach(player => {
+                const card = document.createElement('div');
+                card.id = `player-${player.buzzer}`;
+                card.className = 'player-card';
+                if (!player.canPress) card.classList.add('disabled');
+
+                card.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-score">${player.score}</div>
+                `;
+                playersGrid.appendChild(card);
+            });
+        }
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'players-updated') {
+                updatePlayers(data.players);
+            }
+            else if (data.type === 'new-song' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+
+                // Reset all player cards
+                document.querySelectorAll('.player-card').forEach(card => {
+                    card.classList.remove('pressed', 'right', 'wrong');
+                });
+            }
+            else if (data.type === 'buzzer-pressed') {
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playerCard.classList.add('pressed');
+                }
+            }
+            else if (data.songGuessed === true) {
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playerCard.classList.remove('pressed');
+                    playerCard.classList.add('right');
+                }
+                if (data.trackInfo) {
+                    document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                    document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                    document.getElementById('artistName').textContent = data.trackInfo.artistName;
+                }
+            }
+            else if (data.songGuessed === false) {
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playerCard.classList.remove('pressed');
+                    playerCard.classList.add('wrong');
+                }
+            }
+            else if (data.type === 'track-revealed' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+
+                // Disable all player cards
+                document.querySelectorAll('.player-card').forEach(card => {
+                    card.classList.add('disabled');
+                });
+            }
+        };
+    </script>
+</body>
+
+</html>

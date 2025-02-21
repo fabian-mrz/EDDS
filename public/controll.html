@@ -49,9 +49,7 @@
     <button id="nextButton">Weiter</button>
     <button id="rightButton">Richtig</button>
     <button id="wrongButton">Falsch</button>
-    <label for="buzzerId">Buzzer ID:</label>
-    <input type="text" id="buzzerId" name="buzzerId">
-    <button id="resetButton">Reset Buzzer</button>
+    <button id="revealButton" style="background-color: #ffc107; color: black;">Reveal Track</button>
     <label for="playerName">Player Name:</label>
     <input type="text" id="playerName" name="playerName">
     <label for="playerScore">Player Score:</label>
@@ -88,13 +86,21 @@
                 .catch((error) => { console.error('Error:', error); });
         });
 
+        document.getElementById('revealButton').addEventListener('click', function() {
+            fetch('/control/reveal', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    console.log('Track revealed successfully');
+                })
+                .catch((error) => {
+                    console.error('Error revealing track:', error);
+                });
+        });
+
         document.getElementById('wrongButton').addEventListener('click', function () {
             fetch('/control/wrong', { method: 'POST' })
-                .catch((error) => { console.error('Error:', error); });
-        });
-        document.getElementById('resetButton').addEventListener('click', function () {
-            let buzzerId = document.getElementById('buzzerId').value;
-            fetch('/reset-buzzer/' + buzzerId, { method: 'POST' })
                 .catch((error) => { console.error('Error:', error); });
         });
 

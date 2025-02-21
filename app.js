@@ -7,7 +7,9 @@ const ini = require('ini');
 const SpotifyWebApi = require('spotify-web-api-node');
 const WebSocket = require('ws');
 const cookieParser = require('cookie-parser');
-const port = 8080;
+const port = 3000;
+const wsPort = 8081;  // Keep WebSocket port as is
+const hostname = "192.168.178.45"
 
 
 app.use(express.json());
@@ -15,7 +17,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Create a WebSocket server
-const wss = new WebSocket.Server({ port: 8081 });
+const wss = new WebSocket.Server({ port: wsPort });
 
 // Broadcast function to send a message to all connected clients
 async function broadcast(data) {
@@ -45,7 +47,7 @@ var scopes = ['user-read-playback-state', 'user-modify-playback-state'],
 const spotifyApi = new SpotifyWebApi({
     clientId: config.spotify.clientId,
     clientSecret: config.spotify.clientSecret,
-    redirectUri: 'http://192.168.178.45:8080/callback'
+    redirectUri: `http://${hostname}:3000/callback`
 });
 
 app.get('/login', (req, res) => {
@@ -99,52 +101,52 @@ function generateBuzzerId() {
     return `buzzer${players.length + 1}`;
 }
 
-app.post('/join-buzzer', (req, res) => {
-    let name = req.body.name;
-    let existingPlayer = players.find(player => player.name === name);
-    
-    if (existingPlayer) {
-        // If player exists, just reconnect them
-        existingPlayer.occupied = 1; // Reset occupation count
-        res.cookie('playerId', existingPlayer.buzzer, { 
-            maxAge: 24 * 60 * 60 * 1000,
-            httpOnly: true
-        });
-        res.cookie('playerName', name, {
-            maxAge: 24 * 60 * 60 * 1000,
-            httpOnly: true
-        });
-        res.json({ buzzer: `/${existingPlayer.buzzer}.html` });
-    } else {
-        const buzzerId = generateBuzzerId();
-        const newPlayer = {
-            name: name,
-            buzzer: buzzerId,
-            canPress: true,
-            pressed: false,
-            occupied: 1,
-            score: 0
-        };
-        
-        players.push(newPlayer);
-        console.log(`${name} has joined as ${buzzerId}`);
-        
-        const buzzerHtml = generateBuzzerHtml(buzzerId);
-        const filePath = path.join(__dirname, 'public', `${buzzerId}.html`);
-        fs.writeFileSync(filePath, buzzerHtml);
-        
-        res.cookie('playerId', buzzerId, { 
-            maxAge: 24 * 60 * 60 * 1000,
-            httpOnly: true
-        });
-        res.cookie('playerName', name, {
-            maxAge: 24 * 60 * 60 * 1000,
-            httpOnly: true
-        });
-        
-        res.json({ buzzer: `/${buzzerId}.html` });
-        broadcast({ type: 'players-updated', players });
+function getUniquePlayerName(baseName) {
+    let name = baseName;
+    let counter = 1;
+
+    while (players.some(player => player.name === name)) {
+        name = `${baseName}${counter}`;
+        counter++;
     }
+
+    return name;
+}
+
+// Update the join-buzzer route
+app.post('/join-buzzer', (req, res) => {
+    let requestedName = req.body.name;
+
+    // Always create a new player with a unique name
+    const uniqueName = getUniquePlayerName(requestedName);
+    const buzzerId = generateBuzzerId();
+    const newPlayer = {
+        name: uniqueName,
+        buzzer: buzzerId,
+        canPress: true,
+        pressed: false,
+        occupied: 1,
+        score: 0
+    };
+
+    players.push(newPlayer);
+    console.log(`${uniqueName} has joined as ${buzzerId}`);
+
+    const buzzerHtml = generateBuzzerHtml(buzzerId);
+    const filePath = path.join(__dirname, 'public', `${buzzerId}.html`);
+    fs.writeFileSync(filePath, buzzerHtml);
+
+    res.cookie('playerId', buzzerId, {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true
+    });
+    res.cookie('playerName', uniqueName, {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true
+    });
+
+    res.json({ buzzer: `/${buzzerId}.html` });
+    broadcast({ type: 'players-updated', players });
 });
 
 // Replace the existing generateBuzzerHtml function with:
@@ -157,12 +159,12 @@ function generateBuzzerHtml(buzzerId) {
 app.get('/check-session', (req, res) => {
     const playerId = req.cookies.playerId;
     const playerName = req.cookies.playerName;
-    
+
     if (playerId && playerName) {
         const player = players.find(p => p.buzzer === playerId && p.name === playerName);
         if (player) {
-            res.json({ 
-                exists: true, 
+            res.json({
+                exists: true,
                 buzzer: `/${player.buzzer}.html`,
                 name: player.name
             });
@@ -184,16 +186,16 @@ app.post('/control/right', (req, res) => {
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
         broadcast({ type: 'players-updated', players });
-        
+
         // Get and broadcast the revealed track info
         getCurrentTrackInfo(spotifyApi, true).then(trackInfo => {
-            broadcast({ 
-                songGuessed: true, 
+            broadcast({
+                songGuessed: true,
                 buzzer: player.buzzer,
                 trackInfo: trackInfo
             });
         });
-        
+
         // Disable all other players' buzzers
         players.forEach(p => {
             p.canPress = false;
@@ -201,16 +203,43 @@ app.post('/control/right', (req, res) => {
                 broadcast({ type: 'disable-buzzer', buzzer: p.buzzer });
             }
         });
-        
+
         // Wait for the drop animation
         setTimeout(() => {
             jumpToDrop(spotifyApi);
             startPlayback(spotifyApi);
             player.pressed = false;
             buzzerPressed = false;
-        }, 3000);  // Increased delay to show track info
+        }, 2000);  // Increased delay to show track info
     }
     res.sendStatus(200);
+});
+
+app.post('/control/reveal', async (req, res) => {
+    try {
+        // Get and broadcast the revealed track info without checking for pressed players
+        const trackInfo = await getCurrentTrackInfo(spotifyApi, true);
+        if (trackInfo) {
+            // Disable all buzzers
+            players.forEach(p => {
+                p.canPress = false;
+                broadcast({ type: 'disable-buzzer', buzzer: p.buzzer });
+            });
+
+            // Broadcast the revealed track info
+            broadcast({
+                type: 'track-revealed',
+                trackInfo: trackInfo
+            });
+
+            res.sendStatus(200);
+        } else {
+            res.status(500).json({ error: 'Could not get track info' });
+        }
+    } catch (error) {
+        console.error('Error in reveal route:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 app.post('/control/wrong', (req, res) => {
@@ -220,7 +249,7 @@ app.post('/control/wrong', (req, res) => {
         player.canPress = false;
         player.pressed = false;
         broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
-        
+
         // Enable all other players to buzz again
         players.forEach(p => {
             if (p.buzzer !== player.buzzer) {
@@ -228,7 +257,7 @@ app.post('/control/wrong', (req, res) => {
                 broadcast({ type: 'can-press-again', buzzer: p.buzzer });
             }
         });
-        
+
         startPlayback(spotifyApi);
         buzzerPressed = false;
     }
@@ -236,48 +265,35 @@ app.post('/control/wrong', (req, res) => {
 });
 
 app.post('/control/next', async (req, res) => {
-    jumpToRandomPosition(spotifyApi);
-    
+
+
     players.forEach(player => {
         player.canPress = true;
         player.pressed = false;
     });
     buzzerPressed = false;
-    
+
     // Get and broadcast the hidden track info
     const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
     broadcast({ type: 'new-song', trackInfo: trackInfo });
-    
+
     players.forEach(player => {
         broadcast({ type: 'round-end', buzzer: player.buzzer });
     });
-    
+
     console.log('Alle Spieler können wieder drücken.');
+    jumpToRandomPosition(spotifyApi);
     res.sendStatus(200);
 });
 
-//buzzerX.hmtl
-app.post('/reset-buzzer/:playerName', (req, res) => {
-    let playerName = req.params.playerName;
-    let player = players.find(player => player.name === playerName);
-    if (player) {
-        player.occupied = 0;
-        console.log(`${player.name}'s buzzer has been reset.`);
-        res.sendStatus(200);
-        console.log(players);
-    } else {
-        console.log(`No player found with name ${playerName}`);
-        console.log(players);
-        res.sendStatus(404);
-    }
-});
+
 
 
 app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
     let buzzerId = req.params.buzzerId;
     const playerName = req.cookies.playerName;
     let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
-    
+
     if (player) {
         res.json({ isOccupied: false });
     } else {
@@ -469,32 +485,32 @@ app.post('/control/reset-game', (req, res) => {
         player.score = 0;
         player.pressed = false;
         player.canPress = true;
-        
+
         // Delete the generated buzzer HTML file
         const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
     });
-    
+
     // Clear the players array
     players = [];
     buzzerPressed = false;
-    
+
     // Notify all clients about the reset
     broadcast({ type: 'players-updated', players });
     broadcast({ type: 'game-reset', message: 'Game has been reset' });
-    
+
     // Notify all clients to clear their cookies and redirect
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ 
-                type: 'clear-session', 
-                redirect: '/index.html' 
+            client.send(JSON.stringify({
+                type: 'clear-session',
+                redirect: '/index.html'
             }));
         }
     });
-    
+
     console.log('Game has been reset');
     res.sendStatus(200);
 });
@@ -510,6 +526,6 @@ app.get('/:buzzerId.html', (req, res) => {
     }
 });
 
-app.listen(port, '192.168.178.45', () => {
-    console.log(`Server running at http://192.168.1.90:${port}`);
+app.listen(port, hostname, () => {
+    console.log(`Server running at http://${hostname}`);
 });

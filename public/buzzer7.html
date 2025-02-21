@@ -1,72 +1,379 @@
-
 <!DOCTYPE html>
 <html>
+
 <head>
+    <title>Song Quiz - Buzzer</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body {
+        .buzzer-container {
+            width: 100%;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
+            padding: 2rem;
+            box-sizing: border-box;
         }
 
         .buzzer-button {
-            width: 80%;
-            height: 80vh;
-            font-size: 2em;
-            border: 30px solid blue;
-            border-radius: 10%;
-            background-color: transparent;
-            color: black;
+            width: 80vw;
+            max-width: 300px;
+            height: 80vw;
+            max-height: 300px;
+            font-size: 1.5em;
+            border: 10px solid var(--spotify-green);
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--spotify-black);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 2px;
+            -webkit-tap-highlight-color: transparent;
+            /* Remove tap highlight on mobile */
+            user-select: none;
+            /* Prevent text selection */
         }
 
-        .buzzer-button.success {
-            border-color: green;
+        .buzzer-button:active {
+            transform: scale(0.95);
         }
+
+
+
+        .buzzer-button.waiting {
+            border-color: #ff9800;
+            background-color: rgba(255, 152, 0);
+            color: var(--white);
+            animation: pulse 1s infinite;
+        }
+
+        .buzzer-button.clicked {
+            border-color: var(--spotify-green);
+            background-color: rgba(29, 185, 84, 0.5);
+            color: var(--white);
+            animation: pulse 1s infinite;
+        }
+
+        .buzzer-button.wrong {
+            border-color: #dc3545;
+            background-color: #dc3545;
+            color: var(--white);
+            animation: fadeToGrey 1s forwards;
+        }
+
+        .buzzer-button.right {
+            border-color: var(--spotify-green);
+            background-color: var(--spotify-green);
+            color: var(--white);
+            animation: pulse 1.5s infinite;
+        }
+
 
         .buzzer-button.error {
-            border-color: red;
+            border-color: #dc3545;
+            animation: shake 0.5s;
+        }
+
+        .buzzer-button.disabled {
+            background-color: #e0e0e0;
+            border-color: #a0a0a0;
+            color: #666;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        @keyframes fadeToGrey {
+            from {
+                background-color: #dc3545;
+                border-color: #dc3545;
+                color: var(--white);
+            }
+
+            to {
+                background-color: #e0e0e0;
+                border-color: #a0a0a0;
+                color: #666;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        .track-info {
+            position: fixed;
+            top: 10px;
+            /* Adjusted top position */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            /* Adjusted padding */
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            /* Responsive width */
+            max-width: 300px;
+            /* Maximum width */
+        }
+
+        .cover-art {
+            width: 150px;
+            /* Adjusted width */
+            height: 150px;
+            /* Adjusted height */
+            margin: 0 auto 10px;
+            /* Adjusted margin */
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .cover-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .track-text {
+            margin: 5px 0;
+            font-size: 1em;
+            /* Adjusted font size */
+            color: var(--spotify-black);
+        }
+
+        .track-name {
+            font-weight: bold;
+        }
+
+        /* Add these styles to the existing style section */
+        .scoreboard {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .scoreboard-title {
+            color: var(--spotify-black);
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .score-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 15px;
+            margin: 5px 0;
+            background: rgba(29, 185, 84, 0.1);
+            border-radius: 8px;
+            color: var(--spotify-black);
+        }
+
+        .score-item.highlight {
+            background: rgba(29, 185, 84, 0.2);
+            font-weight: bold;
         }
     </style>
 </head>
+
 <body>
-    <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
+    <div class="track-info">
+        <div class="cover-art">
+            <img id="albumCover" src="/cover.png">
+        </div>
+        <div class="track-text track-name" id="trackName"></div>
+        <div class="track-text" id="artistName"></div>
+    </div>
+    <div class="buzzer-container">
+        <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
+    </div>
+
+    <!-- Add this div after the buzzer-container div -->
+    <div class="scoreboard">
+        <div class="scoreboard-title">Top 3 Players</div>
+        <ul class="score-list" id="scoreList">
+            <!-- Scores will be inserted here -->
+        </ul>
+    </div>
 
     <script>
-        window.onload = function() {
-            fetch('/check-buzzer-onload/buzzer7')
+        const ws = new WebSocket('ws://192.168.178.45:8081');
+
+        const buzzerId = 'buzzer7';
+        let canPress = true;
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const buzzerButton = document.getElementById('buzzerButton');
+
+            if (data.type === 'clear-session') {
+                document.cookie = 'playerId=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = 'playerName=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                window.location.href = data.redirect;
+            }
+            else if (data.type === 'track-revealed' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+            }
+            else if (data.type === 'new-song' && data.trackInfo) {
+                // Update track info with hidden values
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+            }
+            else if (data.songGuessed === true && data.trackInfo) {
+                // Reveal track info for everyone
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+
+                if (data.buzzer === buzzerId) {
+                    buzzerButton.classList.remove('waiting');
+                    buzzerButton.classList.add('right');
+                }
+            }
+            else if (data.songGuessed === false && data.buzzer === buzzerId) {
+                // Wrong answer - show red fading to grey
+                buzzerButton.classList.remove('waiting');
+                buzzerButton.classList.add('wrong', 'disabled');
+                canPress = false; // This player can't press anymore
+            }
+            else if (data.type === 'disable-buzzer' && data.buzzer === buzzerId) {
+                // Disable buzzer when someone else got it right
+                buzzerButton.classList.remove('waiting');
+                buzzerButton.classList.add('disabled');
+                canPress = false;
+            }
+            else if (data.type === 'can-press-again' && data.buzzer === buzzerId) {
+                // Other players can press again after someone guessed wrong
+                buzzerButton.classList.remove('waiting', 'right', 'wrong', 'disabled');
+                canPress = true;
+            }
+            else if (data.type === 'round-end' && data.buzzer === buzzerId) {
+                // New round - reset button state completely
+                buzzerButton.classList.remove('waiting', 'right', 'wrong', 'disabled');
+                canPress = true;
+            }
+
+            // Add this condition to handle player updates
+            if (data.type === 'players-updated') {
+                updateScoreboard(data.players);
+            }
+        };
+
+        window.onload = function () {
+            fetch(`/check-buzzer-onload/${buzzerId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.isOccupied) {
                         window.location.href = '/index.html';
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    window.location.href = '/index.html';
                 });
         };
 
         function buzzerPressed() {
-            fetch('/buzzer-pressed/buzzer7', {
+            if (!canPress) return;
+
+            const buzzerButton = document.getElementById('buzzerButton');
+            buzzerButton.classList.add('waiting');
+            canPress = false;
+
+            fetch(`/buzzer-pressed/${buzzerId}`, {
                 method: 'POST',
             })
                 .then(response => response.json())
                 .then(data => {
-                    let buzzerButton = document.getElementById('buzzerButton');
-                    if (data.success) {
-                        buzzerButton.classList.remove('error');
-                        buzzerButton.classList.add('success');
-                    } else {
-                        buzzerButton.classList.remove('success');
-                        buzzerButton.classList.add('error');
-                        setTimeout(() => {
-                            buzzerButton.classList.remove('error');
-                        }, 3000);
+                    if (!data.success) {
+                        // Someone else was faster
+                        buzzerButton.classList.remove('waiting');
+                        buzzerButton.classList.add('disabled');
                     }
                 })
                 .catch((error) => {
                     console.error('Error:', error);
+                    buzzerButton.classList.remove('waiting');
+                    canPress = true;
                 });
+        }
+
+        // Add this function to the existing script section
+        function updateScoreboard(players) {
+            const scoreList = document.getElementById('scoreList');
+            const currentBuzzerId = '{{BUZZER_ID}}';
+
+            // Sort players by score in descending order
+            const topPlayers = [...players]
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 3);  // Get top 3
+
+            // Clear current list
+            scoreList.innerHTML = '';
+
+            // Add top 3 players
+            topPlayers.forEach(player => {
+                const li = document.createElement('li');
+                li.className = 'score-item' + (player.buzzer === currentBuzzerId ? ' highlight' : '');
+                li.innerHTML = `
+                <span>${player.name}</span>
+                <span>${player.score}</span>
+            `;
+                scoreList.appendChild(li);
+            });
         }
     </script>
 </body>
+
 </html>
