@@ -1,62 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Buzzer</title>
+    <title>Song Quiz - Control Panel</title>
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        .control-container {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
             flex-direction: column;
-            /* Add this line to align items vertically */
-            gap: 20px;
-            /* Add this line to create space between items */
+            gap: 1rem;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        button,
-        input {
-            font-size: 1.5em;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007BFF;
-            color: black;
-            cursor: pointer;
-            margin: 10px 0;
-            /* Add this line to create space between buttons */
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
         }
 
-        input {
-            background-color: white;
-            /* Change the background color of the input field */
+        .score-control {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 2rem;
         }
 
-        button:hover {
-            background-color: #0056b3;
+        #revealButton {
+            background-color: #ffc107;
+            color: var(--spotify-black);
+        }
+
+        #resetGameButton {
+            background-color: #dc3545;
+            margin-top: 2rem;
         }
     </style>
 </head>
 
 <body>
-    <button id="nextButton">Weiter</button>
-    <button id="rightButton">Richtig</button>
-    <button id="wrongButton">Falsch</button>
-    <button id="revealButton" style="background-color: #ffc107; color: black;">Reveal Track</button>
-    <label for="playerName">Player Name:</label>
-    <input type="text" id="playerName" name="playerName">
-    <label for="playerScore">Player Score:</label>
-    <input type="text" id="playerScore" name="playerScore">
-    <button id="updateScoreButton">Update Score</button>
-    <button id="resetGameButton" style="background-color: #dc3545;">Reset Game</button>
+    <div class="control-container">
+        <div class="button-group">
+            <button id="nextButton">Weiter</button>
+            <button id="rightButton">Richtig</button>
+            <button id="wrongButton">Falsch</button>
+            <button id="revealButton">Reveal Track</button>
+        </div>
 
+        <div class="score-control">
+            <label for="playerName">Player Name:</label>
+            <input type="text" id="playerName" name="playerName">
+            <label for="playerScore">Player Score:</label>
+            <input type="text" id="playerScore" name="playerScore">
+            <button id="updateScoreButton">Update Score</button>
+        </div>
+
+        <button id="resetGameButton">Reset Game</button>
+    </div>
 
     <script>
         document.getElementById('updateScoreButton').addEventListener('click', function () {
@@ -117,5 +123,4 @@
     });
     </script>
 </body>
-
 </html>

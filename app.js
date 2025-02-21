@@ -7,6 +7,8 @@ const ini = require('ini');
 const SpotifyWebApi = require('spotify-web-api-node');
 const WebSocket = require('ws');
 const cookieParser = require('cookie-parser');
+// Add near the top with other requires
+const session = require('express-session');
 const port = 3000;
 const wsPort = 8081;  // Keep WebSocket port as is
 const hostname = "192.168.178.45"
@@ -15,6 +17,23 @@ const hostname = "192.168.178.45"
 app.use(express.json());
 
 app.use(cookieParser());
+
+// Add after other app.use statements
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
+
+// Add authentication middleware
+function requireAuth(req, res, next) {
+    if (req.session && req.session.authenticated) {
+        next();
+    } else {
+        res.redirect('/login.html');
+    }
+}
 
 // Create a WebSocket server
 const wss = new WebSocket.Server({ port: wsPort });
@@ -58,6 +77,39 @@ app.get('/login', (req, res) => {
 spotifyApi.setAccessToken(config2.spotify.access_token);
 spotifyApi.setRefreshToken(config2.spotify.refresh_token);
 
+// Check token validity and start refresh cycle
+spotifyApi.getMe()
+    .then(() => {
+        console.log('Initial token is valid');
+        // Start refresh cycle 1 minute before token expires
+        setTimeout(refreshAccessToken, 3540 * 1000); // 3600 - 60 seconds
+    })
+    .catch(() => {
+        console.log('Initial token expired, refreshing now...');
+        refreshAccessToken();
+    });
+
+function refreshAccessToken() {
+    spotifyApi.refreshAccessToken()
+        .then(data => {
+            const access_token = data.body['access_token'];
+            console.log('Access token has been refreshed!');
+
+            spotifyApi.setAccessToken(access_token);
+
+            // Update config2.ini with new access token
+            const currentConfig = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
+            currentConfig.spotify.access_token = access_token;
+            fs.writeFileSync('./config2.ini', ini.stringify(currentConfig));
+
+            // Schedule next refresh before token expires (subtract 1 minute for safety)
+            setTimeout(refreshAccessToken, (data.body['expires_in'] - 60) * 1000);
+        })
+        .catch(error => {
+            console.error('Could not refresh access token:', error);
+            console.log('Please re-authenticate at /login');
+        });
+}
 
 //routes
 app.post('/update-score', (req, res) => {
@@ -179,6 +231,9 @@ app.get('/check-session', (req, res) => {
 
 
 //controll.html
+// Protect all control routes
+app.post('/control/*', requireAuth);
+app.get('/control.html', requireAuth);
 app.post('/control/right', (req, res) => {
     console.log(players);
     let player = players.find(player => player.pressed === true);
@@ -243,6 +298,7 @@ app.post('/control/reveal', async (req, res) => {
 });
 
 app.post('/control/wrong', (req, res) => {
+    refreshAccessToken();
     let player = players.find(player => player.pressed === true);
     if (player) {
         // Only disable the player who guessed wrong
@@ -265,8 +321,7 @@ app.post('/control/wrong', (req, res) => {
 });
 
 app.post('/control/next', async (req, res) => {
-
-
+    refreshAccessToken();
     players.forEach(player => {
         player.canPress = true;
         player.pressed = false;
@@ -522,8 +577,35 @@ app.get('/:buzzerId.html', (req, res) => {
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
     } else {
-        res.status(404).send('Buzzer not found');
+        // redirect to index.html if the buzzer file does not exist
+        res.redirect('/index.html');
     }
+});
+
+//auth
+// Add this with your other routes
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Replace these with your desired credentials
+    const validUsername = 'admin';
+    const validPassword = 'songquiz123';
+
+    if (username === validUsername && password === validPassword) {
+        req.session.authenticated = true;
+        res.json({ success: true });
+    } else {
+        res.json({
+            success: false,
+            message: 'Invalid username or password'
+        });
+    }
+});
+
+// Add logout route
+app.post('/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ success: true });
 });
 
 app.listen(port, hostname, () => {
