@@ -6,9 +6,13 @@ const fs = require('fs');
 const ini = require('ini');
 const SpotifyWebApi = require('spotify-web-api-node');
 const WebSocket = require('ws');
+const cookieParser = require('cookie-parser');
 const port = 8080;
 
+
 app.use(express.json());
+
+app.use(cookieParser());
 
 // Create a WebSocket server
 const wss = new WebSocket.Server({ port: 8081 });
@@ -28,12 +32,7 @@ const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
 const config2 = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
 
 // Spielerdaten
-let players = [
-    { name: 'Spieler 1', buzzer: 'buzzer1', canPress: true, pressed: false, occupied: 0, score: 0 },
-    { name: 'Spieler 2', buzzer: 'buzzer2', canPress: true, pressed: false, occupied: 0, score: 0 },
-    { name: 'Spieler 3', buzzer: 'buzzer3', canPress: true, pressed: false, occupied: 0, score: 0 },
-    { name: 'Spieler 4', buzzer: 'buzzer4', canPress: true, pressed: false, occupied: 0, score: 0 },
-];
+let players = []
 
 let buzzerPressed = false; // Wurde ein Buzzer bereits gedrückt?
 
@@ -46,7 +45,7 @@ var scopes = ['user-read-playback-state', 'user-modify-playback-state'],
 const spotifyApi = new SpotifyWebApi({
     clientId: config.spotify.clientId,
     clientSecret: config.spotify.clientSecret,
-    redirectUri: 'http://192.168.1.90:8080/callback'
+    redirectUri: 'http://192.168.178.45:8080/callback'
 });
 
 app.get('/login', (req, res) => {
@@ -93,6 +92,89 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
 });
 
 
+// buzzer.html
+
+// Add this function before the routes
+function generateBuzzerId() {
+    return `buzzer${players.length + 1}`;
+}
+
+app.post('/join-buzzer', (req, res) => {
+    let name = req.body.name;
+    let existingPlayer = players.find(player => player.name === name);
+    
+    if (existingPlayer) {
+        // If player exists, just reconnect them
+        existingPlayer.occupied = 1; // Reset occupation count
+        res.cookie('playerId', existingPlayer.buzzer, { 
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
+        res.cookie('playerName', name, {
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
+        res.json({ buzzer: `/${existingPlayer.buzzer}.html` });
+    } else {
+        const buzzerId = generateBuzzerId();
+        const newPlayer = {
+            name: name,
+            buzzer: buzzerId,
+            canPress: true,
+            pressed: false,
+            occupied: 1,
+            score: 0
+        };
+        
+        players.push(newPlayer);
+        console.log(`${name} has joined as ${buzzerId}`);
+        
+        const buzzerHtml = generateBuzzerHtml(buzzerId);
+        const filePath = path.join(__dirname, 'public', `${buzzerId}.html`);
+        fs.writeFileSync(filePath, buzzerHtml);
+        
+        res.cookie('playerId', buzzerId, { 
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
+        res.cookie('playerName', name, {
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
+        
+        res.json({ buzzer: `/${buzzerId}.html` });
+        broadcast({ type: 'players-updated', players });
+    }
+});
+
+// Replace the existing generateBuzzerHtml function with:
+function generateBuzzerHtml(buzzerId) {
+    const templatePath = path.join(__dirname, 'public', 'buzzer-template.html');
+    let template = fs.readFileSync(templatePath, 'utf8');
+    return template.replace('{{BUZZER_ID}}', buzzerId);
+}
+
+app.get('/check-session', (req, res) => {
+    const playerId = req.cookies.playerId;
+    const playerName = req.cookies.playerName;
+    
+    if (playerId && playerName) {
+        const player = players.find(p => p.buzzer === playerId && p.name === playerName);
+        if (player) {
+            res.json({ 
+                exists: true, 
+                buzzer: `/${player.buzzer}.html`,
+                name: player.name
+            });
+            return;
+        }
+    }
+    // Clear invalid cookies
+    res.clearCookie('playerId');
+    res.clearCookie('playerName');
+    res.json({ exists: false });
+});
+
 
 //controll.html
 app.post('/control/right', (req, res) => {
@@ -101,46 +183,78 @@ app.post('/control/right', (req, res) => {
     if (player) {
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
-        player.pressed = false;
-        jumpToDrop(spotifyApi);
-        startPlayback(spotifyApi);
         broadcast({ type: 'players-updated', players });
-        broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: true }); // Send the buzzer that was pressed and true to all connected clients
-        broadcast({ songGuessed: true });
+        
+        // Get and broadcast the revealed track info
+        getCurrentTrackInfo(spotifyApi, true).then(trackInfo => {
+            broadcast({ 
+                songGuessed: true, 
+                buzzer: player.buzzer,
+                trackInfo: trackInfo
+            });
+        });
+        
+        // Disable all other players' buzzers
+        players.forEach(p => {
+            p.canPress = false;
+            if (p.buzzer !== player.buzzer) {
+                broadcast({ type: 'disable-buzzer', buzzer: p.buzzer });
+            }
+        });
+        
+        // Wait for the drop animation
+        setTimeout(() => {
+            jumpToDrop(spotifyApi);
+            startPlayback(spotifyApi);
+            player.pressed = false;
+            buzzerPressed = false;
+        }, 3000);  // Increased delay to show track info
     }
     res.sendStatus(200);
 });
 
 app.post('/control/wrong', (req, res) => {
-    startPlayback(spotifyApi);
     let player = players.find(player => player.pressed === true);
     if (player) {
-        buzzerPressed = false;
+        // Only disable the player who guessed wrong
+        player.canPress = false;
         player.pressed = false;
-        broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: false }); // Send the buzzer that was pressed and true to all connected clients
+        broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
+        
+        // Enable all other players to buzz again
+        players.forEach(p => {
+            if (p.buzzer !== player.buzzer) {
+                p.canPress = true;
+                broadcast({ type: 'can-press-again', buzzer: p.buzzer });
+            }
+        });
+        
+        startPlayback(spotifyApi);
+        buzzerPressed = false;
     }
-    buzzerPressed = false;
     res.sendStatus(200);
 });
 
 app.post('/control/next', async (req, res) => {
     jumpToRandomPosition(spotifyApi);
-    // Send a message to all connected clients
-    broadcast({ songGuessed: false });
+    
     players.forEach(player => {
         player.canPress = true;
+        player.pressed = false;
     });
     buzzerPressed = false;
+    
+    // Get and broadcast the hidden track info
+    const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
+    broadcast({ type: 'new-song', trackInfo: trackInfo });
+    
+    players.forEach(player => {
+        broadcast({ type: 'round-end', buzzer: player.buzzer });
+    });
+    
     console.log('Alle Spieler können wieder drücken.');
-
-    // Get the current track info
-    const trackInfo = await getCurrentTrackInfo(spotifyApi);
-
-    // Send the track info to all connected clients
-    broadcast(trackInfo);
     res.sendStatus(200);
 });
-
 
 //buzzerX.hmtl
 app.post('/reset-buzzer/:playerName', (req, res) => {
@@ -159,20 +273,15 @@ app.post('/reset-buzzer/:playerName', (req, res) => {
 });
 
 
-// Check if a buzzer is occupied and set it as occupied if it's not
 app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
     let buzzerId = req.params.buzzerId;
-    let player = players.find(player => player.buzzer === buzzerId);
+    const playerName = req.cookies.playerName;
+    let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
+    
     if (player) {
-        player.occupied++;
-        if (player.occupied <= 2) {
-            res.json({ isOccupied: false });
-        } else {
-            res.json({ isOccupied: true });
-        }
+        res.json({ isOccupied: false });
     } else {
-        console.log(`No player found with buzzer ${buzzerId}`);
-        res.sendStatus(404);
+        res.json({ isOccupied: true });
     }
 });
 
@@ -182,30 +291,7 @@ const { start } = require('repl');
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-//index.html
-// Join a buzzer and set it as occupied
-app.post('/join-buzzer', (req, res) => {
-    let name = req.body.name;
-    let existingPlayer = players.find(player => player.name === name);
-    if (existingPlayer) {
-        console.log(`Player with name ${name} already exists`);
-        res.json({ buzzer: null });
-    } else {
-        let availablePlayer = players.find(player => player.occupied === 0);
-        if (availablePlayer) {
-            availablePlayer.name = name;
-            availablePlayer.occupied = 1;
-            console.log(`${name} has joined ${availablePlayer.buzzer}`);
-            res.json({ buzzer: `/${availablePlayer.buzzer}.html` });
 
-            // WebSocket-Nachricht senden
-            broadcast({ type: 'players-updated', players })
-        } else {
-            console.log(`No available buzzer for ${name}`);
-            res.json({ buzzer: null });
-        }
-    }
-});
 
 
 //Spotify
@@ -256,28 +342,28 @@ app.get('/callback', (req, res) => {
 //functions
 
 //get current track info
-async function getCurrentTrackInfo(spotifyApi) {
+async function getCurrentTrackInfo(spotifyApi, revealed = false) {
     try {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds before getting the current track info
+        await new Promise(resolve => setTimeout(resolve, 2000));
         const data = await spotifyApi.getMyCurrentPlaybackState();
         if (data.body && data.body.item) {
-            const trackName = data.body.item.name;
-            const artistName = data.body.item.artists[0].name;
-            const albumCoverUrl = data.body.item.album.images[0].url;
-
-            console.log('Track name: ' + trackName);
-            console.log('Artist name: ' + artistName);
-            console.log('Album cover URL: ' + albumCoverUrl);
-
-            return {
-                trackName: trackName,
-                artistName: artistName,
-                albumCoverUrl: albumCoverUrl
+            const trackInfo = {
+                trackName: data.body.item.name,
+                artistName: data.body.item.artists[0].name,
+                albumCoverUrl: data.body.item.album.images[0].url,
+                revealed: revealed
             };
-        } else {
-            console.log('No track is currently playing.');
-            return null;
+
+            if (!revealed) {
+                trackInfo.trackName = '???';
+                trackInfo.artistName = '???';
+                trackInfo.albumCoverUrl = '/cover.png';
+            }
+
+            console.log('Track info:', trackInfo);
+            return trackInfo;
         }
+        return null;
     } catch (err) {
         console.log('Something went wrong!', err);
         return null;
@@ -377,23 +463,53 @@ function jumpToDrop(spotifyApi) {
         });
 }
 
-
-app.get('/buzzer1.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/buzzer1.html'));
+app.post('/control/reset-game', (req, res) => {
+    // Reset all player scores and states
+    players.forEach(player => {
+        player.score = 0;
+        player.pressed = false;
+        player.canPress = true;
+        
+        // Delete the generated buzzer HTML file
+        const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    });
+    
+    // Clear the players array
+    players = [];
+    buzzerPressed = false;
+    
+    // Notify all clients about the reset
+    broadcast({ type: 'players-updated', players });
+    broadcast({ type: 'game-reset', message: 'Game has been reset' });
+    
+    // Notify all clients to clear their cookies and redirect
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ 
+                type: 'clear-session', 
+                redirect: '/index.html' 
+            }));
+        }
+    });
+    
+    console.log('Game has been reset');
+    res.sendStatus(200);
 });
 
-app.get('/buzzer2.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/buzzer2.html'));
+
+// Replace the existing static buzzer routes with:
+app.get('/:buzzerId.html', (req, res) => {
+    const filePath = path.join(__dirname, 'public', `${req.params.buzzerId}.html`);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send('Buzzer not found');
+    }
 });
 
-app.get('/buzzer3.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/buzzer3.html'));
-});
-
-app.get('/buzzer4.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/buzzer4.html'));
-});
-
-app.listen(port, '192.168.1.90', () => {
+app.listen(port, '192.168.178.45', () => {
     console.log(`Server running at http://192.168.1.90:${port}`);
 });

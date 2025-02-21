@@ -2,12 +2,74 @@
 <html>
 
 <head>
-    <title>Index Page</title>
+    <title>Song Quiz - Join Game</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .container {
+            padding: 3rem;
+            width: 95%;
+            max-width: 600px;
+        }
+
+        .logo {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 7vw, 4rem);
+            margin-bottom: 3rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 20px;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            border: 2px solid var(--spotify-green);
+        }
+
+        button {
+            width: 100%;
+            padding: 20px;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            border-radius: 12px;
+            min-height: 70px;
+        }
+
+        @media (max-height: 700px) {
+            .container {
+                padding: 2rem;
+            }
+
+            .logo {
+                width: 150px;
+                height: 150px;
+                margin-bottom: 2rem;
+            }
+
+            h1 {
+                margin-bottom: 2rem;
+            }
+
+            input,
+            button {
+                padding: 15px;
+                min-height: 60px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <input type="text" id="name" placeholder="Enter your name">
-    <button onclick="joinBuzzer()">Join Buzzer</button>
+    <div class="container">
+        <img src="spotify-icon.png" alt="Quiz Logo" class="logo">
+        <h1>Song Quiz</h1>
+        <input type="text" id="name" placeholder="Enter your name" autocomplete="off">
+        <button onclick="joinBuzzer()">Join Game</button>
+    </div>
 
     <script>
         function joinBuzzer() {
@@ -25,8 +87,22 @@
                     }
                 }
             };
-            request.send(JSON.stringify({ name: name }));
+            request.send(JSON.stringify({
+                name: name
+            }));
         }
+
+        window.onload = function () {
+            // Check for existing session
+            fetch('/check-session')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        window.location.href = data.buzzer;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        };
     </script>
 </body>
 

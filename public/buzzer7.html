@@ -36,7 +36,7 @@
 
     <script>
         window.onload = function() {
-            fetch('/check-buzzer-onload/buzzer3')
+            fetch('/check-buzzer-onload/buzzer7')
                 .then(response => response.json())
                 .then(data => {
                     if (data.isOccupied) {
@@ -46,7 +46,7 @@
         };
 
         function buzzerPressed() {
-            fetch('/buzzer-pressed/buzzer3', {
+            fetch('/buzzer-pressed/buzzer7', {
                 method: 'POST',
             })
                 .then(response => response.json())

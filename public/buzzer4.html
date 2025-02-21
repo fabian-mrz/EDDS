@@ -1,37 +1,41 @@
-<style>
-    body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-        background-color: #f0f0f0;
-    }
 
-    .buzzer-button {
-        width: 80%;
-        height: 80vh;
-        font-size: 2em;
-        border: 30px solid blue;
-        border-radius: 10%;
-        background-color: transparent;
-        color: black;
-    }
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
 
-    .buzzer-button.success {
-        border-color: green;
-    }
+        .buzzer-button {
+            width: 80%;
+            height: 80vh;
+            font-size: 2em;
+            border: 30px solid blue;
+            border-radius: 10%;
+            background-color: transparent;
+            color: black;
+        }
 
-    .buzzer-button.error {
-        border-color: red;
-    }
-</style>
+        .buzzer-button.success {
+            border-color: green;
+        }
 
+        .buzzer-button.error {
+            border-color: red;
+        }
+    </style>
+</head>
 <body>
     <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
 
     <script>
-        window.onload = function () {
+        window.onload = function() {
             fetch('/check-buzzer-onload/buzzer4')
                 .then(response => response.json())
                 .then(data => {
@@ -40,6 +44,7 @@
                     }
                 });
         };
+
         function buzzerPressed() {
             fetch('/buzzer-pressed/buzzer4', {
                 method: 'POST',
@@ -64,3 +69,4 @@
         }
     </script>
 </body>
+</html>

@@ -57,6 +57,7 @@
     <label for="playerScore">Player Score:</label>
     <input type="text" id="playerScore" name="playerScore">
     <button id="updateScoreButton">Update Score</button>
+    <button id="resetGameButton" style="background-color: #dc3545;">Reset Game</button>
 
 
     <script>
@@ -96,6 +97,18 @@
             fetch('/reset-buzzer/' + buzzerId, { method: 'POST' })
                 .catch((error) => { console.error('Error:', error); });
         });
+
+        document.getElementById('resetGameButton').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the game? All scores will be set to 0.')) {
+            fetch('/control/reset-game', { method: 'POST' })
+                .then(() => {
+                    console.log('Game reset successful');
+                })
+                .catch((error) => {
+                    console.error('Error resetting game:', error);
+                });
+        }
+    });
     </script>
 </body>
 

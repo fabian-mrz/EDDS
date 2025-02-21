@@ -8,3 +8,5 @@ cover.jpeg
 /package.json
 *.ini
 public/buzzer2.html
+.cache
+public/spotify-icon.png

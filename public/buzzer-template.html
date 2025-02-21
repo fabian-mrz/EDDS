@@ -254,7 +254,7 @@
     <script>
         const ws = new WebSocket('ws://192.168.178.45:8081');
 
-        const buzzerId = 'buzzer2';
+        const buzzerId = '{{BUZZER_ID}}';
         let canPress = true;
 
         ws.onmessage = function (event) {
