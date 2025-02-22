@@ -11,7 +11,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const port = 3000;
 const wsPort = 8081;  // Keep WebSocket port as is
-const hostname = "192.168.178.45"
+const hostname = "192.168.179.2"
 
 
 app.use(express.json());
@@ -136,6 +136,8 @@ app.post('/buzzer-pressed/:buzzer', (req, res) => {
             player.pressed = true;
             player.canPress = false;
             res.json({ success: true });
+            axios.get(`http://192.168.179.3/win&PL=4`);
+            console.log(`${player.name} hat den Buzzer gedrückt.`);
             broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
             pausePlayback(spotifyApi);
         } else {
@@ -242,7 +244,6 @@ app.post('/control/right', (req, res) => {
         setTimeout(() => {
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
-        broadcast({ type: 'players-updated', players });
 
         // Get and broadcast the revealed track info
         getCurrentTrackInfo(spotifyApi, true).then(trackInfo => {
@@ -252,6 +253,8 @@ app.post('/control/right', (req, res) => {
                 trackInfo: trackInfo
             });
         });
+
+        broadcast({ type: 'players-updated', players });
 
         // Disable all other players' buzzers
         players.forEach(p => {
@@ -265,6 +268,8 @@ app.post('/control/right', (req, res) => {
         
             jumpToDrop(spotifyApi);
             startPlayback(spotifyApi);
+            axios.get(`http://192.168.179.3/win&PL=2`);
+            console.log('Alle anderen Spieler können nicht mehr drücken.');
             player.pressed = false;
             buzzerPressed = false;
         }, 2000);  
@@ -308,6 +313,9 @@ app.post('/control/wrong', (req, res) => {
         player.pressed = false;
         broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
 
+        axios.get(`http://192.168.179.3/win&PL=5`);
+        console.log(`${player.name} hat falsch geraten und kann nicht mehr drücken.`);
+
         // Enable all other players to buzz again
         players.forEach(p => {
             if (p.buzzer !== player.buzzer) {
@@ -318,6 +326,11 @@ app.post('/control/wrong', (req, res) => {
 
         startPlayback(spotifyApi);
         buzzerPressed = false;
+        // after 3 seconds fetch http://192.168.179.3/win&PL=1
+        setTimeout(() => {
+            axios.get(`http://192.168.179.3/win&PL=1`);
+        },
+            3000);
     }
     res.sendStatus(200);
 });
@@ -330,6 +343,7 @@ app.post('/control/next', async (req, res) => {
     });
     buzzerPressed = false;
 
+
     // Get and broadcast the hidden track info
     const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
     broadcast({ type: 'new-song', trackInfo: trackInfo });
@@ -337,6 +351,9 @@ app.post('/control/next', async (req, res) => {
     players.forEach(player => {
         broadcast({ type: 'round-end', buzzer: player.buzzer });
     });
+
+    axios.get(`http://192.168.179.3/win&PL=1`);
+    // Start playback and jump to a random position
 
     console.log('Alle Spieler können wieder drücken.');
     jumpToRandomPosition(spotifyApi);
@@ -368,7 +385,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 //Spotify
-
 
 app.get('/callback', (req, res) => {
     const error = req.query.error;
