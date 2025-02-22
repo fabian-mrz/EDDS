@@ -17,18 +17,20 @@
         }
 
         .buzzer-button {
-            width: 80vw;
+            width: 90vw;
             max-width: 300px;
-            height: 80vw;
+            height: 90vw;
             max-height: 300px;
-            font-size: 1.5em;
-            border: 10px solid var(--spotify-green);
+            font-size: 2em;
+            border: 12px solid var(--spotify-green);
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.9);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 240, 0.9) 100%);
             color: var(--spotify-black);
             cursor: pointer;
-            transition: transform 0.3s ease;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15),
+                inset 0 4px 8px rgba(255, 255, 255, 0.8),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,99 +38,138 @@
             font-weight: bold;
             letter-spacing: 2px;
             -webkit-tap-highlight-color: transparent;
-            /* Remove tap highlight on mobile */
             user-select: none;
-            /* Prevent text selection */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .buzzer-button:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+            pointer-events: none;
         }
 
         .buzzer-button:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
-
-
 
         .buzzer-button.waiting {
             border-color: #ff9800;
-            background-color: rgba(255, 152, 0, );
+            background: radial-gradient(circle, rgba(255, 152, 0, 0.9) 0%, rgba(255, 152, 0, 0.7) 100%);
             color: var(--white);
-            animation: pulse 1s infinite;
+            animation: pulseWaiting 1.5s infinite;
         }
 
         .buzzer-button.clicked {
             border-color: var(--spotify-green);
-            background-color: rgba(29, 185, 84, 0.5);
+            background: radial-gradient(circle, rgba(29, 185, 84, 0.9) 0%, rgba(29, 185, 84, 0.7) 100%);
             color: var(--white);
-            animation: pulse 1s infinite;
+            animation: pulseClicked 1s infinite;
         }
 
         .buzzer-button.wrong {
             border-color: #dc3545;
-            background-color: #dc3545;
+            background: radial-gradient(circle, rgba(220, 53, 69, 0.9) 0%, rgba(220, 53, 69, 0.7) 100%);
             color: var(--white);
+            animation: wrongShake 0.5s;
         }
 
         .buzzer-button.right {
             border-color: var(--spotify-green);
-            background-color: var(--spotify-green);
+            background: radial-gradient(circle, rgba(29, 185, 84, 0.9) 0%, rgba(29, 185, 84, 0.7) 100%);
             color: var(--white);
-            animation: pulse 1.5s infinite;
-        }
-
-
-        .buzzer-button.error {
-            border-color: #dc3545;
-            animation: shake 0.5s;
+            animation: successPulse 1.5s infinite;
         }
 
         .buzzer-button.disabled {
-            background-color: #e0e0e0;
+            background: radial-gradient(circle, rgba(224, 224, 224, 0.9) 0%, rgba(200, 200, 200, 0.7) 100%);
             border-color: #a0a0a0;
             color: #666;
             cursor: not-allowed;
             animation: none;
+            opacity: 0.7;
         }
 
-        @keyframes fadeToGrey {
-            from {
-                background-color: #dc3545;
-                border-color: #dc3545;
-                color: var(--white);
-            }
-
-            to {
-                background-color: #e0e0e0;
-                border-color: #a0a0a0;
-                color: #666;
-            }
-        }
-
-        @keyframes pulse {
+        @keyframes pulseWaiting {
             0% {
                 transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
             }
 
-            50% {
+            70% {
                 transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(255, 152, 0, 0);
             }
 
             100% {
                 transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
             }
         }
 
-        @keyframes shake {
+        @keyframes pulseClicked {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4);
+            }
+
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 15px rgba(29, 185, 84, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
+            }
+        }
+
+        @keyframes successPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.6);
+            }
+
+            50% {
+                transform: scale(1.08);
+                box-shadow: 0 0 0 25px rgba(29, 185, 84, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
+            }
+        }
+
+        @keyframes wrongShake {
 
             0%,
             100% {
                 transform: translateX(0);
             }
 
-            25% {
-                transform: translateX(-10px);
+            20% {
+                transform: translateX(-15px) rotate(-5deg);
             }
 
-            75% {
-                transform: translateX(10px);
+            40% {
+                transform: translateX(15px) rotate(5deg);
+            }
+
+            60% {
+                transform: translateX(-15px) rotate(-5deg);
+            }
+
+            80% {
+                transform: translateX(15px) rotate(5deg);
             }
         }
 
@@ -303,10 +344,20 @@
                 buzzerButton.classList.remove('waiting', 'right', 'wrong', 'disabled');
                 canPress = true;
             }
-            else if (data.type === 'round-end' && data.buzzer === buzzerId) {
+            // Update the ws.onmessage function's round-end handling
+            else if (data.type === 'round-end') {
                 // New round - reset button state completely
                 buzzerButton.classList.remove('waiting', 'right', 'wrong', 'disabled');
                 canPress = true;
+
+                // Add a subtle animation to indicate the buzzer is ready
+                buzzerButton.animate([
+                    { transform: 'scale(0.95)', opacity: '0.7' },
+                    { transform: 'scale(1)', opacity: '1' }
+                ], {
+                    duration: 300,
+                    easing: 'ease-out'
+                });
             }
 
             // Add this condition to handle player updates
@@ -316,7 +367,10 @@
         };
 
         window.onload = function () {
-            buzzerButton.classList.add('disabled')
+            const buzzerButton = document.getElementById('buzzerButton');
+            buzzerButton.classList.add('disabled');
+            canPress = false;  // Set initial state to false
+
             fetch(`/check-buzzer-onload/${buzzerId}`)
                 .then(response => response.json())
                 .then(data => {

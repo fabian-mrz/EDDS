@@ -125,6 +125,7 @@ app.post('/update-score', (req, res) => {
     }
 });
 
+
 app.post('/buzzer-pressed/:buzzer', (req, res) => {
     let buzzer = req.params.buzzer;
     let player = players.find(player => player.buzzer === buzzer);
@@ -238,6 +239,7 @@ app.post('/control/right', (req, res) => {
     console.log(players);
     let player = players.find(player => player.pressed === true);
     if (player) {
+        setTimeout(() => {
         player.score++;
         console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
         broadcast({ type: 'players-updated', players });
@@ -260,12 +262,12 @@ app.post('/control/right', (req, res) => {
         });
 
         // Wait for the drop animation
-        setTimeout(() => {
+        
             jumpToDrop(spotifyApi);
             startPlayback(spotifyApi);
             player.pressed = false;
             buzzerPressed = false;
-        }, 2000);  // Increased delay to show track info
+        }, 2000);  
     }
     res.sendStatus(200);
 });
