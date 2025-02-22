@@ -40,17 +40,27 @@ const wss = new WebSocket.Server({ port: wsPort });
 
 // Broadcast function to send a message to all connected clients
 async function broadcast(data) {
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-        }
-    });
+    try {
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify(data));
+            }
+        });
+    } catch (error) {
+        console.error("Error broadcasting message:", error);
+    }
 }
 
 
 // Lese die Konfigurationsdatei
-const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
-const config2 = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
+let config, config2;
+try {
+    config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
+    config2 = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
+} catch (error) {
+    console.error("Error reading config files:", error);
+    process.exit(1); // Exit if config files are unreadable
+}
 
 // Spielerdaten
 let players = []
@@ -74,8 +84,13 @@ app.get('/login', (req, res) => {
     console.log('Authorize URL:', authorizeURL);
     res.redirect(authorizeURL);
 });
-spotifyApi.setAccessToken(config2.spotify.access_token);
-spotifyApi.setRefreshToken(config2.spotify.refresh_token);
+
+try {
+    spotifyApi.setAccessToken(config2.spotify.access_token);
+    spotifyApi.setRefreshToken(config2.spotify.refresh_token);
+} catch (error) {
+    console.error("Error setting access token:", error);
+}
 
 // Check token validity and start refresh cycle
 spotifyApi.getMe()
@@ -98,9 +113,13 @@ function refreshAccessToken() {
             spotifyApi.setAccessToken(access_token);
 
             // Update config2.ini with new access token
-            const currentConfig = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
-            currentConfig.spotify.access_token = access_token;
-            fs.writeFileSync('./config2.ini', ini.stringify(currentConfig));
+            try {
+                const currentConfig = ini.parse(fs.readFileSync('./config2.ini', 'utf-8'));
+                currentConfig.spotify.access_token = access_token;
+                fs.writeFileSync('./config2.ini', ini.stringify(currentConfig));
+            } catch (error) {
+                console.error("Error updating config2.ini:", error);
+            }
 
             // Schedule next refresh before token expires (subtract 1 minute for safety)
             setTimeout(refreshAccessToken, (data.body['expires_in'] - 60) * 1000);
@@ -113,38 +132,51 @@ function refreshAccessToken() {
 
 //routes
 app.post('/update-score', (req, res) => {
-    console.log(req.body.name
-        , req.body.score);
-    let player = players.find(player => player.name === req.body.name);
-    if (player) {
-        player.score = parseInt(req.body.score);
-        broadcast({ type: 'players-updated', players });
-        res.status(200).json({ message: 'Score updated successfully' });
-    } else {
-        res.status(400).json({ error: 'No player found with the provided name.' });
+    try {
+        console.log(req.body.name, req.body.score);
+        let player = players.find(player => player.name === req.body.name);
+        if (player) {
+            player.score = parseInt(req.body.score);
+            broadcast({ type: 'players-updated', players });
+            res.status(200).json({ message: 'Score updated successfully' });
+        } else {
+            res.status(400).json({ error: 'No player found with the provided name.' });
+        }
+    } catch (error) {
+        console.error("Error updating score:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 
-app.post('/buzzer-pressed/:buzzer', (req, res) => {
-    let buzzer = req.params.buzzer;
-    let player = players.find(player => player.buzzer === buzzer);
+app.post('/buzzer-pressed/:buzzer', async (req, res) => {
+    try {
+        let buzzer = req.params.buzzer;
+        let player = players.find(player => player.buzzer === buzzer);
 
-    if (player) {
-        if (player && player.canPress && !buzzerPressed) {
-            buzzerPressed = true;
-            player.pressed = true;
-            player.canPress = false;
-            res.json({ success: true });
-            axios.get(`http://192.168.179.3/win&PL=4`);
-            console.log(`${player.name} hat den Buzzer gedrückt.`);
-            broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
-            pausePlayback(spotifyApi);
+        if (player) {
+            if (player && player.canPress && !buzzerPressed) {
+                buzzerPressed = true;
+                player.pressed = true;
+                player.canPress = false;
+                res.json({ success: true });
+                try {
+                    await axios.get(`http://192.168.179.3/win&PL=4`);
+                } catch (error) {
+                    console.error("Error sending command to external device:", error);
+                }
+                console.log(`${player.name} hat den Buzzer gedrückt.`);
+                broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
+                pausePlayback(spotifyApi);
+            } else {
+                res.json({ success: false, message: 'Dieser Spieler kann den Buzzer nicht drücken.' });
+            }
         } else {
-            res.json({ success: false, message: 'Dieser Spieler kann den Buzzer nicht drücken.' });
+            res.json({ success: false, message: 'Kein Spieler gefunden.' });
         }
-    } else {
-        res.json({ success: false, message: 'Kein Spieler gefunden.' });
+    } catch (error) {
+        console.error("Error processing buzzer press:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -170,66 +202,81 @@ function getUniquePlayerName(baseName) {
 
 // Update the join-buzzer route
 app.post('/join-buzzer', (req, res) => {
-    let requestedName = req.body.name;
+    try {
+        let requestedName = req.body.name;
 
-    // Always create a new player with a unique name
-    const uniqueName = getUniquePlayerName(requestedName);
-    const buzzerId = generateBuzzerId();
-    const newPlayer = {
-        name: uniqueName,
-        buzzer: buzzerId,
-        canPress: true,
-        pressed: false,
-        occupied: 1,
-        score: 0
-    };
+        // Always create a new player with a unique name
+        const uniqueName = getUniquePlayerName(requestedName);
+        const buzzerId = generateBuzzerId();
+        const newPlayer = {
+            name: uniqueName,
+            buzzer: buzzerId,
+            canPress: true,
+            pressed: false,
+            occupied: 1,
+            score: 0
+        };
 
-    players.push(newPlayer);
-    console.log(`${uniqueName} has joined as ${buzzerId}`);
+        players.push(newPlayer);
+        console.log(`${uniqueName} has joined as ${buzzerId}`);
 
-    const buzzerHtml = generateBuzzerHtml(buzzerId);
-    const filePath = path.join(__dirname, 'public', `${buzzerId}.html`);
-    fs.writeFileSync(filePath, buzzerHtml);
+        const buzzerHtml = generateBuzzerHtml(buzzerId);
+        const filePath = path.join(__dirname, 'public', `${buzzerId}.html`);
+        fs.writeFileSync(filePath, buzzerHtml);
 
-    res.cookie('playerId', buzzerId, {
-        maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true
-    });
-    res.cookie('playerName', uniqueName, {
-        maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true
-    });
+        res.cookie('playerId', buzzerId, {
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
+        res.cookie('playerName', uniqueName, {
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true
+        });
 
-    res.json({ buzzer: `/${buzzerId}.html` });
-    broadcast({ type: 'players-updated', players });
+        res.json({ buzzer: `/${buzzerId}.html` });
+        broadcast({ type: 'players-updated', players });
+    } catch (error) {
+        console.error("Error joining buzzer:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Replace the existing generateBuzzerHtml function with:
 function generateBuzzerHtml(buzzerId) {
-    const templatePath = path.join(__dirname, 'public', 'buzzer-template.html');
-    let template = fs.readFileSync(templatePath, 'utf8');
-    return template.replace('{{BUZZER_ID}}', buzzerId);
+    try {
+        const templatePath = path.join(__dirname, 'public', 'buzzer-template.html');
+        let template = fs.readFileSync(templatePath, 'utf8');
+        return template.replace('{{BUZZER_ID}}', buzzerId);
+    } catch (error) {
+        console.error("Error generating buzzer HTML:", error);
+        return `<p>Error generating buzzer. Please refresh.</p>`; // Fallback in case of error
+    }
 }
 
 app.get('/check-session', (req, res) => {
-    const playerId = req.cookies.playerId;
-    const playerName = req.cookies.playerName;
+    try {
+        const playerId = req.cookies.playerId;
+        const playerName = req.cookies.playerName;
 
-    if (playerId && playerName) {
-        const player = players.find(p => p.buzzer === playerId && p.name === playerName);
-        if (player) {
-            res.json({
-                exists: true,
-                buzzer: `/${player.buzzer}.html`,
-                name: player.name
-            });
-            return;
+        if (playerId && playerName) {
+            const player = players.find(p => p.buzzer === playerId && p.name === playerName);
+            if (player) {
+                res.json({
+                    exists: true,
+                    buzzer: `/${player.buzzer}.html`,
+                    name: player.name
+                });
+                return;
+            }
         }
+        // Clear invalid cookies
+        res.clearCookie('playerId');
+        res.clearCookie('playerName');
+        res.json({ exists: false });
+    } catch (error) {
+        console.error("Error checking session:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    // Clear invalid cookies
-    res.clearCookie('playerId');
-    res.clearCookie('playerName');
-    res.json({ exists: false });
 });
 
 
@@ -238,43 +285,54 @@ app.get('/check-session', (req, res) => {
 app.post('/control/*', requireAuth);
 app.get('/control.html', requireAuth);
 app.post('/control/right', (req, res) => {
-    console.log(players);
-    let player = players.find(player => player.pressed === true);
-    if (player) {
-        setTimeout(() => {
-        player.score++;
-        console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
+    try {
+        console.log(players);
+        let player = players.find(player => player.pressed === true);
+        if (player) {
+            setTimeout(async () => {
+                player.score++;
+                console.log(`${player.name} hat einen Punkt erhalten. Gesamtpunktzahl: ${player.score}`);
 
-        // Get and broadcast the revealed track info
-        getCurrentTrackInfo(spotifyApi, true).then(trackInfo => {
-            broadcast({
-                songGuessed: true,
-                buzzer: player.buzzer,
-                trackInfo: trackInfo
-            });
-        });
+                // Get and broadcast the revealed track info
+                try {
+                    const trackInfo = await getCurrentTrackInfo(spotifyApi, true);
+                    broadcast({
+                        songGuessed: true,
+                        buzzer: player.buzzer,
+                        trackInfo: trackInfo
+                    });
+                } catch (error) {
+                    console.error("Error getting track info:", error);
+                }
 
-        broadcast({ type: 'players-updated', players });
+                broadcast({ type: 'players-updated', players });
 
-        // Disable all other players' buzzers
-        players.forEach(p => {
-            p.canPress = false;
-            if (p.buzzer !== player.buzzer) {
-                broadcast({ type: 'disable-buzzer', buzzer: p.buzzer });
-            }
-        });
+                // Disable all other players' buzzers
+                players.forEach(p => {
+                    p.canPress = false;
+                    if (p.buzzer !== player.buzzer) {
+                        broadcast({ type: 'disable-buzzer', buzzer: p.buzzer });
+                    }
+                });
 
-        // Wait for the drop animation
-        
-            jumpToDrop(spotifyApi);
-            startPlayback(spotifyApi);
-            axios.get(`http://192.168.179.3/win&PL=2`);
-            console.log('Alle anderen Spieler können nicht mehr drücken.');
-            player.pressed = false;
-            buzzerPressed = false;
-        }, 2000);  
+                // Wait for the drop animation
+                try {
+                    jumpToDrop(spotifyApi);
+                    startPlayback(spotifyApi);
+                    await axios.get(`http://192.168.179.3/win&PL=2`);
+                } catch (error) {
+                    console.error("Error controlling playback or external device:", error);
+                }
+                console.log('Alle anderen Spieler können nicht mehr drücken.');
+                player.pressed = false;
+                buzzerPressed = false;
+            }, 2000);
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error handling correct answer:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    res.sendStatus(200);
 });
 
 app.post('/control/reveal', async (req, res) => {
@@ -305,73 +363,100 @@ app.post('/control/reveal', async (req, res) => {
 });
 
 app.post('/control/wrong', (req, res) => {
-    refreshAccessToken();
-    let player = players.find(player => player.pressed === true);
-    if (player) {
-        // Only disable the player who guessed wrong
-        player.canPress = false;
-        player.pressed = false;
-        broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
+    try {
+        refreshAccessToken();
+        let player = players.find(player => player.pressed === true);
+        if (player) {
+            // Only disable the player who guessed wrong
+            player.canPress = false;
+            player.pressed = false;
+            broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
 
-        axios.get(`http://192.168.179.3/win&PL=5`);
-        console.log(`${player.name} hat falsch geraten und kann nicht mehr drücken.`);
-
-        // Enable all other players to buzz again
-        players.forEach(p => {
-            if (p.buzzer !== player.buzzer) {
-                p.canPress = true;
-                broadcast({ type: 'can-press-again', buzzer: p.buzzer });
+            try {
+                axios.get(`http://192.168.179.3/win&PL=5`);
+            } catch (error) {
+                console.error("Error sending command to external device:", error);
             }
-        });
+            console.log(`${player.name} hat falsch geraten und kann nicht mehr drücken.`);
 
-        startPlayback(spotifyApi);
-        buzzerPressed = false;
-        // after 3 seconds fetch http://192.168.179.3/win&PL=1
-        setTimeout(() => {
-            axios.get(`http://192.168.179.3/win&PL=1`);
-        },
-            3000);
+            // Enable all other players to buzz again
+            players.forEach(p => {
+                if (p.buzzer !== player.buzzer) {
+                    p.canPress = true;
+                    broadcast({ type: 'can-press-again', buzzer: p.buzzer });
+                }
+            });
+
+            startPlayback(spotifyApi);
+            buzzerPressed = false;
+            // after 3 seconds fetch http://192.168.179.3/win&PL=1
+            setTimeout(() => {
+                try {
+                    axios.get(`http://192.168.179.3/win&PL=1`);
+                } catch (error) {
+                    console.error("Error sending command to external device:", error);
+                }
+            },
+                6000);
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error handling wrong answer:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    res.sendStatus(200);
 });
 
 app.post('/control/next', async (req, res) => {
-    refreshAccessToken();
-    players.forEach(player => {
-        player.canPress = true;
-        player.pressed = false;
-    });
-    buzzerPressed = false;
+    try {
+        refreshAccessToken();
+        players.forEach(player => {
+            player.canPress = true;
+            player.pressed = false;
+        });
+        buzzerPressed = false;
 
 
-    // Get and broadcast the hidden track info
-    const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
-    broadcast({ type: 'new-song', trackInfo: trackInfo });
+        // Get and broadcast the hidden track info
+        const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
+        broadcast({ type: 'new-song', trackInfo: trackInfo });
 
-    players.forEach(player => {
-        broadcast({ type: 'round-end', buzzer: player.buzzer });
-    });
+        players.forEach(player => {
+            broadcast({ type: 'round-end', buzzer: player.buzzer });
+        });
 
-    axios.get(`http://192.168.179.3/win&PL=1`);
-    // Start playback and jump to a random position
+        try {
+            axios.get(`http://192.168.179.3/win&PL=1`);
+        } catch (error) {
+            console.error("Error sending command to external device:", error);
+        }
+        // Start playback and jump to a random position
 
-    console.log('Alle Spieler können wieder drücken.');
-    jumpToRandomPosition(spotifyApi);
-    res.sendStatus(200);
+        console.log('Alle Spieler können wieder drücken.');
+        jumpToRandomPosition(spotifyApi);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error proceeding to next song:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 
 
 
 app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
-    let buzzerId = req.params.buzzerId;
-    const playerName = req.cookies.playerName;
-    let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
+    try {
+        let buzzerId = req.params.buzzerId;
+        const playerName = req.cookies.playerName;
+        let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
 
-    if (player) {
-        res.json({ isOccupied: false });
-    } else {
-        res.json({ isOccupied: true });
+        if (player) {
+            res.json({ isOccupied: false });
+        } else {
+            res.json({ isOccupied: true });
+        }
+    } catch (error) {
+        console.error("Error checking buzzer onload:", error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -415,7 +500,11 @@ app.get('/callback', (req, res) => {
                 refresh_token: refresh_token
             }
         };
-        fs.writeFileSync('./config2.ini', ini.stringify(config));
+        try {
+            fs.writeFileSync('./config2.ini', ini.stringify(config));
+        } catch (error) {
+            console.error("Error writing to config2.ini:", error);
+        }
 
         console.log(`Sucessfully retreived access token. Expires in ${expires_in} s.`);
         res.send('Success! You can now close the window.');
@@ -553,39 +642,44 @@ function jumpToDrop(spotifyApi) {
 }
 
 app.post('/control/reset-game', (req, res) => {
-    // Reset all player scores and states
-    players.forEach(player => {
-        player.score = 0;
-        player.pressed = false;
-        player.canPress = true;
+    try {
+        // Reset all player scores and states
+        players.forEach(player => {
+            player.score = 0;
+            player.pressed = false;
+            player.canPress = true;
 
-        // Delete the generated buzzer HTML file
-        const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-    });
+            // Delete the generated buzzer HTML file
+            const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        });
 
-    // Clear the players array
-    players = [];
-    buzzerPressed = false;
+        // Clear the players array
+        players = [];
+        buzzerPressed = false;
 
-    // Notify all clients about the reset
-    broadcast({ type: 'players-updated', players });
-    broadcast({ type: 'game-reset', message: 'Game has been reset' });
+        // Notify all clients about the reset
+        broadcast({ type: 'players-updated', players });
+        broadcast({ type: 'game-reset', message: 'Game has been reset' });
 
-    // Notify all clients to clear their cookies and redirect
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'clear-session',
-                redirect: '/index.html'
-            }));
-        }
-    });
+        // Notify all clients to clear their cookies and redirect
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'clear-session',
+                    redirect: '/index.html'
+                }));
+            }
+        });
 
-    console.log('Game has been reset');
-    res.sendStatus(200);
+        console.log('Game has been reset');
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error resetting game:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 
@@ -624,6 +718,12 @@ app.post('/login', (req, res) => {
 app.post('/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
+});
+
+// Centralized error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 app.listen(port, hostname, () => {
