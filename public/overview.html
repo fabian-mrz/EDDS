@@ -130,6 +130,38 @@
     <script>
         const ws = new WebSocket('ws://192.168.179.2:8081');
 
+        // Sound effects manager
+        const sounds = {
+            buzzer: new Audio('/sounds/buzzer.mp3'),
+            correct: new Audio('/sounds/correct.mp3'),
+            wrong: new Audio('/sounds/wrong.mp3'),
+        };
+
+        // Enable sound playback on first user interaction
+        document.addEventListener('click', initializeAudio);
+
+        function initializeAudio() {
+            // Create a silent audio context to enable sound
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+
+            // Remove the initialization listener after first click
+            document.removeEventListener('click', initializeAudio);
+        }
+
+        Object.values(sounds).forEach(sound => {
+            sound.volume = 0.5; // Set volume to 30%
+        });
+
+        function playSound(soundName) {
+            try {
+                sounds[soundName].currentTime = 0; // Reset sound to start
+                sounds[soundName].play().catch(error => console.log('Sound playback failed:', error));
+            } catch (error) {
+                console.log('Error playing sound:', error);
+            }
+        }
+
         function updatePlayers(players) {
             const playersGrid = document.getElementById('playersGrid');
             playersGrid.innerHTML = '';
@@ -165,6 +197,7 @@
                 });
             }
             else if (data.type === 'buzzer-pressed') {
+                playSound('buzzer');
                 const playerCard = document.getElementById(`player-${data.buzzer}`);
                 if (playerCard) {
                     playerCard.classList.add('pressed');
@@ -173,6 +206,7 @@
             else if (data.songGuessed === true) {
                 const playerCard = document.getElementById(`player-${data.buzzer}`);
                 if (playerCard) {
+                    playSound('correct');
                     playerCard.classList.remove('pressed');
                     playerCard.classList.add('right');
                 }
@@ -185,6 +219,7 @@
             else if (data.songGuessed === false) {
                 const playerCard = document.getElementById(`player-${data.buzzer}`);
                 if (playerCard) {
+                    playSound('wrong');
                     playerCard.classList.remove('pressed');
                     playerCard.classList.add('wrong');
                 }

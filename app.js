@@ -326,7 +326,7 @@ app.post('/control/right', (req, res) => {
                 console.log('Alle anderen Spieler können nicht mehr drücken.');
                 player.pressed = false;
                 buzzerPressed = false;
-            }, 2000);
+            }, 1000);
         }
         res.sendStatus(200);
     } catch (error) {
