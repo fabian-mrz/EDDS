@@ -96,6 +96,7 @@
             cursor: not-allowed;
             animation: none;
             opacity: 0.7;
+            transition: all 0.3s ease;
         }
 
         @keyframes pulseWaiting {
@@ -285,7 +286,7 @@
     </div>
 
     <script>
-        const ws = new WebSocket('ws://192.168.178.45:8081');
+        const ws = new WebSocket('ws://192.168.179.2:8081');
 
         const buzzerId = 'buzzer6';
         let canPress = true;
@@ -298,6 +299,35 @@
                 document.cookie = 'playerId=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
                 document.cookie = 'playerName=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
                 window.location.href = data.redirect;
+            }
+            else if (data.type === 'buzzer-pressed') {
+                if (data.buzzer === buzzerId) {
+                    // This is the player who pressed - show waiting state
+                    buzzerButton.classList.add('waiting');
+                    canPress = false;
+                } else {
+                    // Other players - show disabled state
+                    buzzerButton.classList.add('disabled');
+                    canPress = false;
+                }
+            }
+            // When a wrong answer is given, enable buttons for others
+            else if (data.songGuessed === false) {
+                if (data.buzzer === buzzerId) {
+                    // Wrong answer - show red first, then fade to disabled
+                    buzzerButton.classList.remove('waiting');
+                    buzzerButton.classList.add('wrong');
+                    canPress = false;
+
+                    setTimeout(() => {
+                        buzzerButton.classList.remove('wrong');
+                        buzzerButton.classList.add('disabled');
+                    }, 5000);
+                } else {
+                    // Other players can press again
+                    buzzerButton.classList.remove('disabled');
+                    canPress = true;
+                }
             }
             else if (data.type === 'track-revealed' && data.trackInfo) {
                 document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
@@ -361,8 +391,11 @@
             }
 
             // Add this condition to handle player updates
-            if (data.type === 'players-updated') {
+            else if (data.type === 'players-updated') {
                 updateScoreboard(data.players);
+            }
+            else if (data.type === 'game-winner') {
+                window.location.href = '/winner.html';
             }
         };
 

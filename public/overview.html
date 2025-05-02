@@ -224,6 +224,9 @@
                     playerCard.classList.add('wrong');
                 }
             }
+            else if (data.type === 'game-winner') {
+                window.location.href = '/winner.html';
+            }
             else if (data.type === 'track-revealed' && data.trackInfo) {
                 document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
                 document.getElementById('trackName').textContent = data.trackInfo.trackName;

@@ -391,8 +391,11 @@
             }
 
             // Add this condition to handle player updates
-            if (data.type === 'players-updated') {
+            else if (data.type === 'players-updated') {
                 updateScoreboard(data.players);
+            }
+            else if (data.type === 'game-winner') {
+                window.location.href = '/winner.html';
             }
         };
 
