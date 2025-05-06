@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const axios = require('axios');
 const fs = require('fs');
 const ini = require('ini');
 const SpotifyWebApi = require('spotify-web-api-node');
@@ -10,8 +9,8 @@ const cookieParser = require('cookie-parser');
 // Add near the top with other requires
 const session = require('express-session');
 const port = 3000;
-const wsPort = 8081;  // Keep WebSocket port as is
-const hostname = "192.168.179.2"
+const wsPort = 8081;  
+const hostname = "127.0.0.1"
 
 
 app.use(express.json());
@@ -160,11 +159,6 @@ app.post('/buzzer-pressed/:buzzer', async (req, res) => {
                 player.pressed = true;
                 player.canPress = false;
                 res.json({ success: true });
-                try {
-                    await axios.get(`http://192.168.179.3/win&PL=4`);
-                } catch (error) {
-                    console.error("Error sending command to external device:", error);
-                }
                 console.log(`${player.name} hat den Buzzer gedrückt.`);
                 broadcast({ type: 'buzzer-pressed', buzzer: player.buzzer, pressed: "pressed" }); // Send the buzzer that was pressed and true to all connected clients
                 pausePlayback(spotifyApi);
@@ -320,7 +314,6 @@ app.post('/control/right', (req, res) => {
                 try {
                     jumpToDrop(spotifyApi);
                     startPlayback(spotifyApi);
-                    await axios.get(`http://192.168.179.3/win&PL=2`);
                 } catch (error) {
                     console.error("Error controlling playback or external device:", error);
                 }
@@ -368,17 +361,6 @@ app.post('/control/get-winner', async (req, res) => {
                 buzzer: winner.buzzer
             }
         });
-        await axios.get(`http://192.168.179.3/win&PL=6`);
-
-        //timeout 5 seconds await axios.get(`xf`);
-        setTimeout(() => {
-            try {
-                axios.get(`http://192.168.179.3/win&PL=1`);
-            } catch (error) {
-                console.error("Error sending command to external device:", error);
-            }
-        }
-            , 10000);
 
         res.sendStatus(200);
     } catch (error) {
@@ -442,11 +424,6 @@ app.post('/control/wrong', (req, res) => {
             player.pressed = false;
             broadcast({ songGuessed: false, buzzer: player.buzzer }); // Send to wrong guesser
 
-            try {
-                axios.get(`http://192.168.179.3/win&PL=5`);
-            } catch (error) {
-                console.error("Error sending command to external device:", error);
-            }
             console.log(`${player.name} hat falsch geraten und kann nicht mehr drücken.`);
 
             // Enable all other players to buzz again
@@ -460,14 +437,7 @@ app.post('/control/wrong', (req, res) => {
             startPlayback(spotifyApi);
             buzzerPressed = false;
             // after 3 seconds fetch http://192.168.179.3/win&PL=1
-            setTimeout(() => {
-                try {
-                    axios.get(`http://192.168.179.3/win&PL=1`);
-                } catch (error) {
-                    console.error("Error sending command to external device:", error);
-                }
-            },
-                6000);
+            
         }
         res.sendStatus(200);
     } catch (error) {
@@ -494,11 +464,7 @@ app.post('/control/next', async (req, res) => {
             broadcast({ type: 'round-end', buzzer: player.buzzer });
         });
 
-        try {
-            axios.get(`http://192.168.179.3/win&PL=1`);
-        } catch (error) {
-            console.error("Error sending command to external device:", error);
-        }
+       
         // Start playback and jump to a random position
 
         console.log('Alle Spieler können wieder drücken.');
@@ -784,12 +750,7 @@ app.post('/control/start-game', (req, res) => {
                     broadcast({ type: 'round-end', buzzer: player.buzzer });
                 });
 
-                // Turn on LED strip
-                try {
-                    await axios.get(`http://192.168.179.3/win&PL=7`);
-                } catch (error) {
-                    console.error("Error sending command to external device:", error);
-                }
+              
             } catch (error) {
                 console.error("Error setting up first song:", error);
             }

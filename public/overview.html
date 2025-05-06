@@ -128,7 +128,8 @@
     </div>
 
     <script>
-        const ws = new WebSocket('ws://192.168.179.2:8081');
+        let host = window.location.host;
+        const ws = new WebSocket(`ws://${host}/ws`);
 
         // Sound effects manager
         const sounds = {
