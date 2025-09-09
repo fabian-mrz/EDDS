@@ -235,7 +235,7 @@ app.post('/join-buzzer', (req, res) => {
     }
 });
 
-// Replace the existing generateBuzzerHtml function with:
+
 function generateBuzzerHtml(buzzerId) {
     try {
         const templatePath = path.join(__dirname, 'public', 'buzzer-template.html');
@@ -247,6 +247,8 @@ function generateBuzzerHtml(buzzerId) {
     }
 }
 
+// Check for existing sesstion
+// set is occupied to false, then after 5 seconds to true again, eles we have endless loop
 app.get('/check-session', (req, res) => {
     try {
         const playerId = req.cookies.playerId;
@@ -255,11 +257,20 @@ app.get('/check-session', (req, res) => {
         if (playerId && playerName) {
             const player = players.find(p => p.buzzer === playerId && p.name === playerName);
             if (player) {
+                // Set occupied to false
+                player.occupied = false;
+
+                // Reset occupied to true after 5 seconds
+                setTimeout(() => {
+                    player.occupied = true;
+                }, 5000);
+
                 res.json({
                     exists: true,
                     buzzer: `/${player.buzzer}.html`,
                     name: player.name
                 });
+
                 return;
             }
         }
@@ -484,6 +495,9 @@ app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
         let buzzerId = req.params.buzzerId;
         const playerName = req.cookies.playerName;
         let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
+
+        // debug log
+        console.log("Checking buzzer onload:", buzzerId, playerName, player);
 
         if (player) {
             res.json({ isOccupied: false });
