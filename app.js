@@ -6,7 +6,6 @@ const ini = require('ini');
 const SpotifyWebApi = require('spotify-web-api-node');
 const WebSocket = require('ws');
 const cookieParser = require('cookie-parser');
-// Add near the top with other requires
 const session = require('express-session');
 const port = 3000;
 const wsPort = 8081;  
@@ -130,19 +129,30 @@ function refreshAccessToken() {
 }
 
 //routes
-app.post('/update-score', (req, res) => {
+
+
+
+
+
+
+// buzzer.html
+
+app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
     try {
-        console.log(req.body.name, req.body.score);
-        let player = players.find(player => player.name === req.body.name);
+        let buzzerId = req.params.buzzerId;
+        const playerName = req.cookies.playerName;
+        let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
+
+        // debug log
+        console.log("Checking buzzer onload:", buzzerId, playerName, player);
+
         if (player) {
-            player.score = parseInt(req.body.score);
-            broadcast({ type: 'players-updated', players });
-            res.status(200).json({ message: 'Score updated successfully' });
+            res.json({ isOccupied: false });
         } else {
-            res.status(400).json({ error: 'No player found with the provided name.' });
+            res.json({ isOccupied: true });
         }
     } catch (error) {
-        console.error("Error updating score:", error);
+        console.error("Error checking buzzer onload:", error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -175,9 +185,6 @@ app.post('/buzzer-pressed/:buzzer', async (req, res) => {
 });
 
 
-// buzzer.html
-
-// Add this function before the routes
 function generateBuzzerId() {
     return `buzzer${players.length + 1}`;
 }
@@ -248,7 +255,6 @@ function generateBuzzerHtml(buzzerId) {
 }
 
 // Check for existing sesstion
-// set is occupied to false, then after 5 seconds to true again, eles we have endless loop
 app.get('/check-session', (req, res) => {
     try {
         const playerId = req.cookies.playerId;
@@ -290,6 +296,7 @@ app.get('/check-session', (req, res) => {
 app.post('/control/*', requireAuth);
 app.get('/control.html', requireAuth);
 app.get('/get-winner', requireAuth); // Add this line
+
 app.post('/control/right', (req, res) => {
     try {
         console.log(players);
@@ -340,6 +347,24 @@ app.post('/control/right', (req, res) => {
     }
 });
 
+//Has to be updated to use authentication
+app.post('/update-score', (req, res) => {
+    try {
+        console.log(req.body.name, req.body.score);
+        let player = players.find(player => player.name === req.body.name);
+        if (player) {
+            player.score = parseInt(req.body.score);
+            broadcast({ type: 'players-updated', players });
+            res.status(200).json({ message: 'Score updated successfully' });
+        } else {
+            res.status(400).json({ error: 'No player found with the provided name.' });
+        }
+    } catch (error) {
+        console.error("Error updating score:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Add this new route with other control routes
 app.post('/control/get-winner', async (req, res) => {
     try {
@@ -376,24 +401,6 @@ app.post('/control/get-winner', async (req, res) => {
         res.sendStatus(200);
     } catch (error) {
         console.error("Error announcing winner:", error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// please get request for winner, since broadcast may fail
-app.get('/get-winner', (req, res) => {
-    try {
-        const winner = players.reduce((prev, current) => {
-            return (prev.score > current.score) ? prev : current;
-        });
-
-        res.json({
-            name: winner.name,
-            score: winner.score,
-            buzzer: winner.buzzer
-        });
-    } catch (error) {
-        console.error("Error getting winner:", error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -488,34 +495,142 @@ app.post('/control/next', async (req, res) => {
 });
 
 
-
-
-app.get('/check-buzzer-onload/:buzzerId', (req, res) => {
+// route for start-game that striggers broadcast Not used?
+app.post('/control/start-game', (req, res) => {
     try {
-        let buzzerId = req.params.buzzerId;
-        const playerName = req.cookies.playerName;
-        let player = players.find(player => player.buzzer === buzzerId && player.name === playerName);
+        // Reset game state for new round
+        buzzerPressed = false;
+        
+        // Reset all players' states
+        players.forEach(player => {
+            player.canPress = true;
+            player.pressed = false;
+        });
 
-        // debug log
-        console.log("Checking buzzer onload:", buzzerId, playerName, player);
+        // Broadcast start-game event to all clients
+        broadcast({ 
+            type: 'start-game',
+            message: 'Game is starting'
+        });
 
-        if (player) {
-            res.json({ isOccupied: false });
-        } else {
-            res.json({ isOccupied: true });
-        }
+        // Get initial track info and broadcast it after a delay
+        setTimeout(async () => {
+            try {
+                const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
+                broadcast({ type: 'new-song', trackInfo: trackInfo });
+                
+                // Jump to random position in song
+                jumpToRandomPosition(spotifyApi);
+                
+                // Notify all players they can press again
+                players.forEach(player => {
+                    broadcast({ type: 'round-end', buzzer: player.buzzer });
+                });
+
+              
+            } catch (error) {
+                console.error("Error setting up first song:", error);
+            }
+        }, 4000); // Wait for intro animation to finish
+
+        res.sendStatus(200);
     } catch (error) {
-        console.error("Error checking buzzer onload:", error);
+        console.error("Error starting game:", error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+
+app.post('/control/reset-game', (req, res) => {
+    try {
+        // Reset all player scores and states
+        players.forEach(player => {
+            player.score = 0;
+            player.pressed = false;
+            player.canPress = true;
+
+            // Delete the generated buzzer HTML file
+            const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        });
+
+        // Clear the players array
+        players = [];
+        buzzerPressed = false;
+
+        // Notify all clients about the reset
+        broadcast({ type: 'players-updated', players });
+        broadcast({ type: 'game-reset', message: 'Game has been reset' });
+
+        // Notify all clients to clear their cookies and redirect
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'clear-session',
+                    redirect: '/index.html'
+                }));
+            }
+        });
+
+        console.log('Game has been reset');
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error resetting game:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+
+
+// Overview.html
+
+app.get('/get-winner', (req, res) => {
+    try {
+        const winner = players.reduce((prev, current) => {
+            return (prev.score > current.score) ? prev : current;
+        });
+
+        res.json({
+            name: winner.name,
+            score: winner.score,
+            buzzer: winner.buzzer
+        });
+    } catch (error) {
+        console.error("Error getting winner:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// get top 3 players
+app.get('/get-top3', (req, res) => {
+    try {
+        const top3 = [...players]
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3)
+            .map(player => ({
+                name: player.name,
+                score: player.score,
+                buzzer: player.buzzer
+            }));
+            
+        res.json({ top3: top3 });
+    }
+    catch (error) {
+        console.error("Error getting top 3 players:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+);
+
 
 
 const bodyParser = require('body-parser');
 const { start } = require('repl');
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 
 
@@ -690,92 +805,6 @@ function jumpToDrop(spotifyApi) {
             console.error('Failed to get current playback state:', error);
         });
 }
-
-app.post('/control/reset-game', (req, res) => {
-    try {
-        // Reset all player scores and states
-        players.forEach(player => {
-            player.score = 0;
-            player.pressed = false;
-            player.canPress = true;
-
-            // Delete the generated buzzer HTML file
-            const filePath = path.join(__dirname, 'public', `${player.buzzer}.html`);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
-        });
-
-        // Clear the players array
-        players = [];
-        buzzerPressed = false;
-
-        // Notify all clients about the reset
-        broadcast({ type: 'players-updated', players });
-        broadcast({ type: 'game-reset', message: 'Game has been reset' });
-
-        // Notify all clients to clear their cookies and redirect
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                    type: 'clear-session',
-                    redirect: '/index.html'
-                }));
-            }
-        });
-
-        console.log('Game has been reset');
-        res.sendStatus(200);
-    } catch (error) {
-        console.error("Error resetting game:", error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// route for start-game that striggers broadcast
-app.post('/control/start-game', (req, res) => {
-    try {
-        // Reset game state for new round
-        buzzerPressed = false;
-        
-        // Reset all players' states
-        players.forEach(player => {
-            player.canPress = true;
-            player.pressed = false;
-        });
-
-        // Broadcast start-game event to all clients
-        broadcast({ 
-            type: 'start-game',
-            message: 'Game is starting'
-        });
-
-        // Get initial track info and broadcast it after a delay
-        setTimeout(async () => {
-            try {
-                const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
-                broadcast({ type: 'new-song', trackInfo: trackInfo });
-                
-                // Jump to random position in song
-                jumpToRandomPosition(spotifyApi);
-                
-                // Notify all players they can press again
-                players.forEach(player => {
-                    broadcast({ type: 'round-end', buzzer: player.buzzer });
-                });
-
-              
-            } catch (error) {
-                console.error("Error setting up first song:", error);
-            }
-        }, 4000); // Wait for intro animation to finish
-
-        res.sendStatus(200);
-    } catch (error) {
-        console.error("Error starting game:", error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
 
 // Replace the existing static buzzer routes with:
