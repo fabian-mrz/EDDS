@@ -77,7 +77,7 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: `http://${hostname}:3000/callback`
 });
 
-app.get('/login', (req, res) => {
+app.get('/spotify-login', (req, res) => {
     var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
     console.log('Authorize URL:', authorizeURL);
     res.redirect(authorizeURL);
@@ -124,7 +124,7 @@ function refreshAccessToken() {
         })
         .catch(error => {
             console.error('Could not refresh access token:', error);
-            console.log('Please re-authenticate at /login');
+            console.log('Please re-authenticate at spotfiy-login');
         });
 }
 
@@ -373,20 +373,9 @@ app.post('/control/get-winner', async (req, res) => {
             return (prev.score > current.score) ? prev : current;
         });
 
-        // Play "The Winner Takes It All" by ABBA
-        await spotifyApi.play({
-            uris: ['spotify:track:3oEkrIfXfSh9zGnE7eBzSV'] // The Winner Takes It All
-        });
+        // stop spotify playback
+        pausePlayback(spotifyApi);
 
-        //jump to ms
-        spotifyApi.seek(232000)
-            .then(() => {
-                console.log(`Jumped to position: 0 ms`);
-            })
-            .catch((error) => {
-                console.error('Failed to jump to position:', error);
-            }
-        );
 
         // Broadcast winner info to all clients
         broadcast({ 
