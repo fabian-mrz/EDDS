@@ -1,43 +1,127 @@
+:root {
+    --spotify-green: #1db954;
+    --spotify-black: #191414;
+    --white: #fff;
+    --glass-bg: rgba(255,255,255,0.75);
+    --glass-blur: blur(12px);
+    --accent: #ff9800;
+    --danger: #dc3545;
+    --success: #4dfc58;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 40px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 32px 16px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+.track-info,
+.scoreboard {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 28px 24px;
+    border-radius: 22px;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 1.5px 8px rgba(29,185,84,0.08);
+    transition: box-shadow 0.2s;
+}
+
+.track-info {
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.cover-art {
+    width: 128px;
+    height: 128px;
+    margin: 0 auto 18px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(29,185,84,0.10), 0 1.5px 8px rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f8f8f8;
+}
+
+.cover-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+}
+
+.track-name {
+    font-size: 1.25em;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--spotify-black);
+    letter-spacing: 0.5px;
+}
+
+.track-text {
+    font-size: 1em;
+    color: #444;
+    opacity: 0.85;
+}
+
 .buzzer-container {
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 8px;
-    /* Reduce space below buzzer */
+    margin-bottom: 0;
     padding: 0;
-    /* Remove extra padding */
     height: auto;
-    /* Remove fixed height */
     box-sizing: border-box;
 }
 
-
 .buzzer-button {
-    width: 90vw;
-    max-width: 300px;
-    height: 90vw;
-    max-height: 300px;
-    font-size: 2em;
-    border: 12px solid var(--spotify-green);
+    width: 92vw;
+    max-width: 320px;
+    height: 92vw;
+    max-height: 320px;
+    font-size: 2.2em;
+    border: 10px solid var(--spotify-green);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 240, 0.9) 100%);
+    background: radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(240,240,240,0.92) 100%);
     color: var(--spotify-black);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15),
-        inset 0 4px 8px rgba(255, 255, 255, 0.8),
-        inset 0 -4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 8px 32px rgba(29,185,84,0.12), 0 1.5px 8px rgba(0,0,0,0.08);
     display: flex;
     justify-content: center;
     align-items: center;
     text-transform: uppercase;
     font-weight: bold;
     letter-spacing: 2px;
-    -webkit-tap-highlight-color: transparent;
     user-select: none;
     position: relative;
     overflow: hidden;
+    outline: none;
 }
 
 .buzzer-button:before {
@@ -47,47 +131,46 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(29,185,84,0.08);
     transform: rotate(45deg);
-    transition: all 0.3s ease;
     pointer-events: none;
 }
 
 .buzzer-button:active {
-    transform: scale(0.92);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transform: scale(0.96);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
 }
 
 .buzzer-button.waiting {
-    border-color: #ff9800;
-    background: radial-gradient(circle, rgba(255, 152, 0, 0.9) 0%, rgba(255, 152, 0, 0.7) 100%);
+    border-color: var(--accent);
+    background: radial-gradient(circle, rgba(255, 152, 0, 0.95) 0%, rgba(255, 152, 0, 0.8) 100%);
     color: var(--white);
     animation: pulseWaiting 1.5s infinite;
 }
 
 .buzzer-button.clicked {
     border-color: var(--spotify-green);
-    background: radial-gradient(circle, rgba(29, 185, 84, 0.9) 0%, rgba(29, 185, 84, 0.7) 100%);
+    background: radial-gradient(circle, rgba(29, 185, 84, 0.95) 0%, rgba(29, 185, 84, 0.8) 100%);
     color: var(--white);
     animation: pulseClicked 1s infinite;
 }
 
 .buzzer-button.wrong {
-    border-color: #dc3545;
-    background: radial-gradient(circle, rgba(220, 53, 69, 0.9) 0%, rgba(220, 53, 69, 0.7) 100%);
+    border-color: var(--danger);
+    background: radial-gradient(circle, rgba(220, 53, 69, 0.95) 0%, rgba(220, 53, 69, 0.8) 100%);
     color: var(--white);
     animation: wrongShake 0.5s;
 }
 
 .buzzer-button.right {
-    border-color: var(--spotify-green);
-    background: radial-gradient(circle, rgba(29, 185, 84, 0.9) 0%, rgba(29, 185, 84, 0.7) 100%);
-    color: var(--white);
+    border-color: var(--success);
+    background: radial-gradient(circle, rgba(77, 252, 88, 0.95) 0%, rgba(77, 252, 88, 0.8) 100%);
+    color: var(--spotify-black);
     animation: successPulse 1.5s infinite;
 }
 
 .buzzer-button.disabled {
-    background: radial-gradient(circle, rgba(224, 224, 224, 0.9) 0%, rgba(200, 200, 200, 0.7) 100%);
+    background: radial-gradient(circle, rgba(224,224,224,0.95) 0%, rgba(200,200,200,0.8) 100%);
     border-color: #a0a0a0;
     color: #666;
     cursor: not-allowed;
@@ -97,230 +180,111 @@
 }
 
 @keyframes pulseWaiting {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
-    }
-
-    70% {
-        transform: scale(1.05);
-        box-shadow: 0 0 0 20px rgba(255, 152, 0, 0);
-    }
-
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
-    }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,152,0,0.4);}
+    70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255,152,0,0);}
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,152,0,0);}
 }
-
 @keyframes pulseClicked {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4);
-    }
-
-    70% {
-        transform: scale(1.05);
-        box-shadow: 0 0 0 15px rgba(29, 185, 84, 0);
-    }
-
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
-    }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29,185,84,0.4);}
+    70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(29,185,84,0);}
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29,185,84,0);}
 }
-
 @keyframes successPulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.6);
-    }
-
-    50% {
-        transform: scale(1.08);
-        box-shadow: 0 0 0 25px rgba(29, 185, 84, 0);
-    }
-
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
-    }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(77,252,88,0.6);}
+    50% { transform: scale(1.08); box-shadow: 0 0 0 25px rgba(77,252,88,0);}
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(77,252,88,0);}
 }
-
 @keyframes wrongShake {
-
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-
-    20% {
-        transform: translateX(-15px) rotate(-5deg);
-    }
-
-    40% {
-        transform: translateX(15px) rotate(5deg);
-    }
-
-    60% {
-        transform: translateX(-15px) rotate(-5deg);
-    }
-
-    80% {
-        transform: translateX(15px) rotate(5deg);
-    }
-}
-
-body {
-    min-height: 100vh;
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    position: relative;
-    z-index: 1;
-}
-
-.container {
-    flex-direction: column;
-    gap: 36px;
-    width: 100%;
-    max-width: 440px;
-    /* Wider for desktop */
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    position: relative;
-    z-index: 1;
-    /* Balanced gap */
-    padding: 24px 16px;
-    box-sizing: border-box;
-    flex-grow: 1;
-}
-
-.track-info {
-    width: 100%;
-    max-width: 400px;
-    margin-top: 12px;
-    margin-bottom: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 18px;
-    padding: 18px 24px;
-    box-sizing: border-box;
-    max-width: 340px;
-    text-align: center;
-}
-
-.cover-art {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 12px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.cover-art img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.track-name {
-    font-size: 1.15em;
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: #222;
-}
-
-.track-text {
-    font-size: 1em;
-    color: #444;
-}
-
-
-.buzzer-button {
-    box-shadow: 0 8px 32px rgba(29, 185, 84, 0.10);
+    0%,100% { transform: translateX(0);}
+    20% { transform: translateX(-15px) rotate(-5deg);}
+    40% { transform: translateX(15px) rotate(5deg);}
+    60% { transform: translateX(-15px) rotate(-5deg);}
+    80% { transform: translateX(15px) rotate(5deg);}
 }
 
 .scoreboard {
-    margin-bottom: 32px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 18px;
-    padding: 18px 24px;
-    width: 80%;
-    box-sizing: border-box;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
 }
 
 .scoreboard-title {
-    font-size: 1.15em;
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: #222;
+    font-size: 1.18em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--spotify-black);
+    letter-spacing: 0.5px;
 }
 
 .score-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: 100%;
 }
 
 .score-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 7px 18px;
-    margin: 6px 0;
-    background: rgba(29, 185, 84, 0.08);
-    border-radius: 8px;
+    padding: 10px 22px;
+    margin: 8px 0;
+    background: rgba(29,185,84,0.10);
+    border-radius: 10px;
     color: #222;
-    font-size: 1em;
+    font-size: 1.08em;
+    transition: background 0.2s;
 }
 
 .score-item.highlight {
-    background: rgba(29, 185, 84, 0.18);
+    background: rgba(29,185,84,0.22);
     font-weight: bold;
-    color: #1db954;
+    color: var(--spotify-green);
 }
 
 @media (max-width: 600px) {
     .container {
-        max-width: 95vw;
-        padding: 8px 2vw;
-        gap: 24px;
+        max-width: 98vw;
+        padding: 12px 2vw;
+        gap: 28px;
     }
     .track-info,
     .scoreboard {
-        max-width: 90%;
-        padding: 32px 2vw;
-        min-height: 120px;
+        max-width: 98vw;
+        padding: 24px 2vw;
+        min-height: 140px;
     }
     .cover-art {
-        width: 80px;
-        height: 80px;
+        width: 88px;
+        height: 88px;
+    }
+    .buzzer-button {
+        width: 80vw;
+        height: 80vw;
+        max-width: 220px;
+        max-height: 220px;
+        font-size: 1.5em;
     }
 }
 
-/* Landscape: row layout, keep centering */
 @media (max-width: 900px) and (orientation: landscape) {
     .container {
         flex-direction: row;
         justify-content: center;
-        align-items: center; /* Center vertically in row layout */
+        align-items: center;
         gap: 24px;
         max-width: 98vw;
         padding: 8px 2vw;
     }
     .track-info,
     .scoreboard {
-        max-width: 320px;
-        min-width: 180px;
+        max-width: 180px;      /* Restore previous width */
+        min-width: 120px;
         padding: 18px 12px;
         min-height: 180px;
+        margin: 0 8px;         /* Add horizontal margin for spacing */
     }
     .buzzer-container {
         align-items: center;
@@ -328,6 +292,17 @@ body {
         flex: 1 1 220px;
         margin-bottom: 0;
         padding: 0 12px;
+    }
+    .cover-art {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 12px;   /* Center cover-art */
+    }
+    .buzzer-button {
+        width: 240px;
+        height: 240px;
+        font-size: 1.1em;
+        border-width: 6px;     /* Slightly thinner border for small button */
     }
 }
 

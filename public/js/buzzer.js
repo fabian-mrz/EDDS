@@ -108,9 +108,6 @@ ws.onmessage = function (event) {
     else if (data.type === 'players-updated') {
         updateScoreboard(data.players);
     }
-    else if (data.type === 'game-winner') {
-        window.location.href = '/winner.html';
-    }
 };
 
 
