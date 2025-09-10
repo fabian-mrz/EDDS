@@ -197,3 +197,24 @@ function updateScoreboard(players) {
         scoreList.appendChild(li);
     });
 }
+
+function randomColor() {
+    // Generate a random pastel color
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 80%)`;
+}
+
+function setRandomGradient() {
+    const color1 = randomColor();
+    const color2 = randomColor();
+    const color3 = randomColor();
+    document.getElementById('randomBg').style.background = 
+        `radial-gradient(circle at ${Math.random()*100}% ${Math.random()*100}%, ${color1} 0%, ${color2} 60%, ${color3} 100%)`;
+}
+
+
+addEventListener('DOMContentLoaded', (event) => {
+    setRandomGradient();
+}
+
+);

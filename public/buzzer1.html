@@ -9,25 +9,23 @@
 </head>
 
 <body>
-    <div class="track-info">
-        <div class="cover-art">
-            <img id="albumCover" src="/cover.png">
+    <div id="randomBg" style="position:fixed; inset:0; z-index:0; pointer-events:none;"></div>
+    <div class="container">
+        <div class="track-info">
+            <div class="cover-art">
+                <img id="albumCover" src="/cover.png" alt="Album Cover">
+            </div>
+            <div class="track-text track-name" id="trackName"></div>
+            <div class="track-text" id="artistName"></div>
         </div>
-        <div class="track-text track-name" id="trackName"></div>
-        <div class="track-text" id="artistName"></div>
+        <div class="buzzer-container">
+            <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
+        </div>
+        <div class="scoreboard">
+            <div class="scoreboard-title">Top 3 Players</div>
+            <ul class="score-list" id="scoreList"></ul>
+        </div>
     </div>
-    <div class="buzzer-container">
-        <button class="buzzer-button" id="buzzerButton" onclick="buzzerPressed()">Buzzer</button>
-    </div>
-
-    <!-- Add this div after the buzzer-container div -->
-    <div class="scoreboard">
-        <div class="scoreboard-title">Top 3 Players</div>
-        <ul class="score-list" id="scoreList">
-            <!-- Scores will be inserted here -->
-        </ul>
-    </div>
-
     <script src="/js/buzzer.js"></script>
 </body>
 
