@@ -1,4 +1,5 @@
-const ws = new WebSocket(`ws://${window.location.hostname}:3000`);
+const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`wss://${window.location.hostname}/`);
 
 let buzzerId;
 let canPress = true;
