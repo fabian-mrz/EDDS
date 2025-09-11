@@ -573,13 +573,18 @@
         // Winner sound, then sans.mp3 after 55s
         const winnerSound = new Audio('/sounds/winner.mp3');
         const sansSound = new Audio('/sounds/sans.mp3');
+        const cheerSound = new Audio('/sounds/cheer.mp3');
         winnerSound.volume = 0.5;
         sansSound.volume = 0.5;
+        cheerSound.volume = 0.5;
         sansSound.loop = true;
+
         winnerSound.play().catch(() => { });
-        winnerSound.addEventListener('ended', () => {
-            // Optionally, you could play a short "cheer" sound here
-        });
+
+        setTimeout(() => {
+            cheerSound.play().catch(() => { });
+        }, 4000); 
+
         setTimeout(() => {
             sansSound.play().catch(() => { });
         }, 55000);

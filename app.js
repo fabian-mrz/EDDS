@@ -12,9 +12,6 @@ const wsPort = 8081;
 const hostname = "127.0.0.1"
 
 
-app.use(express.json());
-
-app.use(cookieParser());
 
 // Add after other app.use statements
 app.use(session({
@@ -24,9 +21,43 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
 }));
 
-// Add authentication middleware
-function requireAuth(req, res, next) {
+
+//Middleware to serve static files
+app.use((req, res, next) => {
+    const publicPaths = [
+        '/login.html',
+        '/login',
+        '/css/styles.css',
+        '/css/buzzer.css',
+        '/css/main.css',
+        '/favicon.ico'
+    ];
+    // Allow access to login page, login endpoint, and CSS
+    if (
+        publicPaths.includes(req.path) ||
+        req.path.startsWith('/js/') ||
+        req.path.startsWith('/images/')
+    ) {
+        return next();
+    }
+    // Allow access if authenticated
     if (req.session && req.session.authenticated) {
+        return next();
+    }
+    // Otherwise redirect to login
+    res.redirect('/login.html');
+});
+
+
+app.use(express.json());
+
+app.use(cookieParser());
+
+
+
+// Add authentication middleware
+function requireAdmin(req, res, next) {
+    if (req.session && req.session.authenticated && req.session.role === 'admin') {
         next();
     } else {
         res.redirect('/login.html');
@@ -293,9 +324,9 @@ app.get('/check-session', (req, res) => {
 
 //controll.html
 // Protect all control routes
-app.post('/control/*', requireAuth);
-app.get('/control.html', requireAuth);
-app.get('/get-winner', requireAuth); // Add this line
+app.post('/control/*', requireAdmin);
+app.get('/control.html', requireAdmin);
+app.get('/get-winner', requireAdmin);
 
 app.post('/control/right', (req, res) => {
     try {
@@ -812,19 +843,33 @@ app.get('/:buzzerId.html', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
-    // Replace these with your desired credentials
-    const validUsername = 'admin';
-    const validPassword = 'songquiz123';
+    // Admin credentials
+    const validAdmin = { username: 'admin', password: 'songquiz123' };
+    // Player credentials (shared)
+    const validPlayer = { username: 'player', password: 'playonly' };
 
-    if (username === validUsername && password === validPassword) {
+    if (username === validAdmin.username && password === validAdmin.password) {
         req.session.authenticated = true;
-        res.json({ success: true });
+        req.session.role = 'admin';
+        res.json({ success: true, role: 'admin' });
+    } else if (username === validPlayer.username && password === validPlayer.password) {
+        req.session.authenticated = true;
+        req.session.role = 'player';
+        res.json({ success: true, role: 'player' });
     } else {
         res.json({
             success: false,
             message: 'Invalid username or password'
         });
     }
+});
+
+
+app.post('/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.clearCookie('connect.sid');
+        res.sendStatus(200);
+    });
 });
 
 // Add logout route

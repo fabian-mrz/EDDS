@@ -1,39 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Song Quiz - Login</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0ffe8 0%, #f7faff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .login-container {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            width: 90%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin: 2rem auto;
+            gap: 1.2rem;
+            width: 100%;
+            max-width: 380px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 2.2rem 2rem;
+            border-radius: 22px;
+            box-shadow: 0 8px 32px rgba(29, 185, 84, 0.10), 0 1.5px 8px rgba(0, 0, 0, 0.08);
+            margin: 0 auto;
+            align-items: center;
+        }
+
+        .login-container h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.5em;
+            color: #1db954;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        #error-message {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.08);
+            border-radius: 8px;
+            padding: 0.5em 1em;
+            margin-bottom: 0.5em;
+            width: 100%;
+            text-align: center;
+            display: none;
+        }
+
+        .login-container input {
+            width: 100%;
+            padding: 0.9em 1em;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            font-size: 1em;
+            margin-bottom: 0.3em;
+            background: rgba(245, 245, 245, 0.8);
+            transition: border 0.2s;
+        }
+
+        .login-container input:focus {
+            border-color: #1db954;
+            outline: none;
+        }
+
+        #loginButton {
+            width: 100%;
+            padding: 0.9em 1em;
+            border-radius: 30px;
+            border: none;
+            background: #1db954;
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(29, 185, 84, 0.12);
+            transition: background 0.2s;
+        }
+
+        #loginButton:hover {
+            background: #159c3a;
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
-        <h2>Control Panel Login</h2>
-        <div id="error-message" style="color: #dc3545; display: none;"></div>
+        <h2>Login</h2>
+        <div id="error-message"></div>
         <input type="text" id="username" placeholder="Username" required>
         <input type="password" id="password" placeholder="Password" required>
         <button id="loginButton">Login</button>
     </div>
 
     <script>
-        document.getElementById('loginButton').addEventListener('click', function() {
+        document.getElementById('loginButton').addEventListener('click', function () {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+
             fetch('/login', {
                 method: 'POST',
                 headers: {
@@ -41,20 +110,25 @@
                 },
                 body: JSON.stringify({ username, password }),
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = '/controll.html';
-                } else {
-                    const errorMessage = document.getElementById('error-message');
-                    errorMessage.textContent = data.message;
-                    errorMessage.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.role === 'admin') {
+                            window.location.href = '/controll.html';
+                        } else {
+                            window.location.href = '/index.html';
+                        }
+                    } else {
+                        const errorMessage = document.getElementById('error-message');
+                        errorMessage.textContent = data.message;
+                        errorMessage.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         });
     </script>
 </body>
+
 </html>
