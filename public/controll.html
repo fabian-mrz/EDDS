@@ -7,22 +7,121 @@
     <title>Song Quiz - Control Panel</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0ffe8 0%, #f7faff 100%);
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .top-buttons-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        #spotifyLoginButton,
+        #logoutButton {
+            width: auto;
+            display: inline-block;
+            font-size: 1em;
+            padding: 0.7em 1.4em;
+            border-radius: 30px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        #spotifyLoginButton {
+            background: #1db954;
+            color: #fff;
+        }
+
+        #spotifyLoginButton:hover {
+            background: #159c3a;
+        }
+
+        #logoutButton {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        #logoutButton:hover {
+            background: #a71d2a;
+        }
+
         .control-container {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            width: 90%;
-            max-width: 600px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 2rem 1.2rem;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            margin-top: 90px;
+            /* leave space for top buttons */
+            align-items: stretch;
         }
 
         .button-group {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 1rem;
+        }
+
+        .button-group button {
+            font-size: 1.1em;
+            padding: 0.8em 0.5em;
+            border-radius: 12px;
+            border: none;
+            background: #f1f1f1;
+            color: #222;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .button-group button:hover {
+            background: #e0ffe8;
+        }
+
+        #winnerButton {
+            background-color: #ffd700;
+            color: var(--spotify-black, #222);
+        }
+
+        #revealButton {
+            background-color: #ffc107;
+            color: var(--spotify-black, #222);
+        }
+
+        #resetGameButton {
+            background-color: #dc3545;
+            color: #fff;
+            margin-top: 2rem;
+            font-weight: 700;
+            border-radius: 18px;
+            padding: 1em 0.5em;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.08);
+            transition: background 0.2s;
+        }
+
+        #resetGameButton:hover {
+            background: #a71d2a;
         }
 
         .score-control {
@@ -33,72 +132,69 @@
             margin-top: 2rem;
         }
 
-        #revealButton {
-            background-color: #ffc107;
-            color: var(--spotify-black);
+        .score-control label {
+            font-weight: 600;
+            color: #1db954;
         }
 
-        #resetGameButton {
-            background-color: #dc3545;
-            margin-top: 2rem;
+        .score-control input {
+            padding: 0.6em 1em;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            font-size: 1em;
+            background: rgba(245, 245, 245, 0.8);
+            transition: border 0.2s;
         }
 
-        /* Add to your <style> block in controll.html */
-        .top-buttons-container {
-            position: absolute;
-            top: 24px;
-            right: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 20;
-            width: auto;
-            margin: 0;
-            height: auto;
+        .score-control input:focus {
+            border-color: #1db954;
+            outline: none;
         }
 
-        #spotifyLoginButton,
-        #logoutButton {
-            position: absolute;
-            right: 32px;
-            width: auto;
-            display: inline-block;
-            z-index: 10;
-        }
-
-        #spotifyLoginButton {
-            top: 16px;
+        #updateScoreButton {
             background: #1db954;
             color: #fff;
-            padding: 0.7em 1.4em;
-            border-radius: 30px;
+            border-radius: 12px;
             font-weight: 600;
-            text-decoration: none;
-            box-shadow: 0 4px 16px rgba(29, 185, 84, 0.12);
-            transition: background 0.2s;
-        }
-
-        #spotifyLoginButton:hover {
-            background: #159c3a;
-        }
-
-        #logoutButton {
-            top: 56px;
-            /* 40px below the Spotify button */
-            background: #dc3545;
-            color: #fff;
-            padding: 0.7em 1.4em;
-            border-radius: 30px;
-            font-weight: 600;
+            padding: 0.7em 1.2em;
             border: none;
-            box-shadow: 0 4px 16px rgba(220, 53, 69, 0.12);
+            box-shadow: 0 2px 8px rgba(29, 185, 84, 0.08);
             transition: background 0.2s;
             cursor: pointer;
         }
 
-        #logoutButton:hover {
-            background: #a71d2a;
+        #updateScoreButton:hover {
+            background: #159c3a;
         }
+
+        @media (max-width: 600px) {
+            .control-container {
+                max-width: 98vw;
+                padding: 1.2rem 2vw;
+                margin-top: 100px;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .score-control {
+                grid-template-columns: 1fr;
+                gap: 0.7rem;
+                margin-top: 1.2rem;
+            }
+
+            .top-buttons-container {
+                top: 8px;
+                right: 8px;
+            }
+
+            #spotifyLoginButton,
+            #logoutButton {
+                font-size: 0.95em;
+                padding: 0.6em 1em;
+            }
     </style>
 </head>
 

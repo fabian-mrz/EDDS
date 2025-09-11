@@ -8,9 +8,12 @@ const WebSocket = require('ws');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const port = 3000;
-const wsPort = 8081;  
 const hostname = "127.0.0.1"
 
+
+const http = require('http');
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 
 // Add after other app.use statements
@@ -22,11 +25,13 @@ app.use(session({
 }));
 
 
+
 //Middleware to serve static files
 app.use((req, res, next) => {
     const publicPaths = [
         '/login.html',
         '/login',
+        '/auto-login', // <-- Add this line
         '/css/styles.css',
         '/css/buzzer.css',
         '/css/main.css',
@@ -64,8 +69,6 @@ function requireAdmin(req, res, next) {
     }
 }
 
-// Create a WebSocket server
-const wss = new WebSocket.Server({ port: wsPort });
 
 // Broadcast function to send a message to all connected clients
 async function broadcast(data) {
@@ -409,8 +412,8 @@ app.post('/control/get-winner', async (req, res) => {
 
 
         // Broadcast winner info to all clients
-        broadcast({ 
-            type: 'game-winner', 
+        broadcast({
+            type: 'game-winner',
             winner: {
                 name: winner.name,
                 score: winner.score,
@@ -475,7 +478,7 @@ app.post('/control/wrong', (req, res) => {
             startPlayback(spotifyApi);
             buzzerPressed = false;
             // after 3 seconds fetch http://192.168.179.3/win&PL=1
-            
+
         }
         res.sendStatus(200);
     } catch (error) {
@@ -502,7 +505,7 @@ app.post('/control/next', async (req, res) => {
             broadcast({ type: 'round-end', buzzer: player.buzzer });
         });
 
-       
+
         // Start playback and jump to a random position
 
         console.log('Alle Spieler können wieder drücken.');
@@ -520,7 +523,7 @@ app.post('/control/start-game', (req, res) => {
     try {
         // Reset game state for new round
         buzzerPressed = false;
-        
+
         // Reset all players' states
         players.forEach(player => {
             player.canPress = true;
@@ -528,7 +531,7 @@ app.post('/control/start-game', (req, res) => {
         });
 
         // Broadcast start-game event to all clients
-        broadcast({ 
+        broadcast({
             type: 'start-game',
             message: 'Game is starting'
         });
@@ -538,16 +541,16 @@ app.post('/control/start-game', (req, res) => {
             try {
                 const trackInfo = await getCurrentTrackInfo(spotifyApi, false);
                 broadcast({ type: 'new-song', trackInfo: trackInfo });
-                
+
                 // Jump to random position in song
                 jumpToRandomPosition(spotifyApi);
-                
+
                 // Notify all players they can press again
                 players.forEach(player => {
                     broadcast({ type: 'round-end', buzzer: player.buzzer });
                 });
 
-              
+
             } catch (error) {
                 console.error("Error setting up first song:", error);
             }
@@ -635,7 +638,7 @@ app.get('/get-top3', (req, res) => {
                 score: player.score,
                 buzzer: player.buzzer
             }));
-            
+
         res.json({ top3: top3 });
     }
     catch (error) {
@@ -873,10 +876,28 @@ app.post('/logout', (req, res) => {
 });
 
 // Add logout route
-app.post('/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
+app.get('/auto-login', (req, res) => {
+    const { user, pass } = req.query;
+
+    // Admin credentials
+    const validAdmin = { username: 'admin', password: 'songquiz123' };
+    const validPlayer = { username: 'player', password: 'playonly' };
+
+    if (user === validAdmin.username && pass === validAdmin.password) {
+        req.session.authenticated = true;
+        req.session.role = 'admin';
+        return res.redirect('/controll.html');
+    } else if (user === validPlayer.username && pass === validPlayer.password) {
+        req.session.authenticated = true;
+        req.session.role = 'player';
+        return res.redirect('/index.html');
+    } else {
+        return res.redirect('/login.html?error=invalid');
+    }
 });
+
+
+
 
 // Centralized error handling middleware
 app.use((err, req, res, next) => {
@@ -884,6 +905,6 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-app.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}`);
+server.listen(port, hostname, () => {
+    console.log(`Server running at http://${hostname}:${port}`);
 });

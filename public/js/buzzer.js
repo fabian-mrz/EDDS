@@ -1,6 +1,4 @@
-let wsHost = "127.0.0.1";
-let wsPort = "8081";
-const ws = new WebSocket(`ws://${wsHost}:${wsPort}`);
+const ws = new WebSocket(`ws://${window.location.hostname}:3000`);
 
 let buzzerId; 
 let canPress = true;
