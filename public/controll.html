@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Quiz - Control Panel</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0ffe8 0%, #f7faff 100%);
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .top-buttons-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        #spotifyLoginButton,
+        #logoutButton {
+            width: auto;
+            display: inline-block;
+            font-size: 1em;
+            padding: 0.7em 1.4em;
+            border-radius: 30px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        #spotifyLoginButton {
+            background: #1db954;
+            color: #fff;
+        }
+
+        #spotifyLoginButton:hover {
+            background: #159c3a;
+        }
+
+        #logoutButton {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        #logoutButton:hover {
+            background: #a71d2a;
+        }
+
+        .control-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 2rem 1.2rem;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            margin-top: 90px;
+            /* leave space for top buttons */
+            align-items: stretch;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .button-group button {
+            font-size: 1.1em;
+            padding: 0.8em 0.5em;
+            border-radius: 12px;
+            border: none;
+            background: #f1f1f1;
+            color: #222;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .button-group button:hover {
+            background: #e0ffe8;
+        }
+
+        #winnerButton {
+            background-color: #ffd700;
+            color: var(--spotify-black, #222);
+        }
+
+        #revealButton {
+            background-color: #ffc107;
+            color: var(--spotify-black, #222);
+        }
+
+        #resetGameButton {
+            background-color: #dc3545;
+            color: #fff;
+            margin-top: 2rem;
+            font-weight: 700;
+            border-radius: 18px;
+            padding: 1em 0.5em;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.08);
+            transition: background 0.2s;
+        }
+
+        #resetGameButton:hover {
+            background: #a71d2a;
+        }
+
+        .score-control {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 2rem;
+        }
+
+        .score-control label {
+            font-weight: 600;
+            color: #1db954;
+        }
+
+        .score-control input {
+            padding: 0.6em 1em;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            font-size: 1em;
+            background: rgba(245, 245, 245, 0.8);
+            transition: border 0.2s;
+        }
+
+        .score-control input:focus {
+            border-color: #1db954;
+            outline: none;
+        }
+
+        #updateScoreButton {
+            background: #1db954;
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.7em 1.2em;
+            border: none;
+            box-shadow: 0 2px 8px rgba(29, 185, 84, 0.08);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        #updateScoreButton:hover {
+            background: #159c3a;
+        }
+
+        @media (max-width: 600px) {
+            .control-container {
+                max-width: 98vw;
+                padding: 1.2rem 2vw;
+                margin-top: 100px;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .score-control {
+                grid-template-columns: 1fr;
+                gap: 0.7rem;
+                margin-top: 1.2rem;
+            }
+
+            .top-buttons-container {
+                top: 8px;
+                right: 8px;
+            }
+
+            #spotifyLoginButton,
+            #logoutButton {
+                font-size: 0.95em;
+                padding: 0.6em 1em;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="top-buttons-container">
+        <a href="/spotify-login" id="spotifyLoginButton">Spotify Login</a>
+        <button id="logoutButton">Logout</button>
+    </div>
+
+    <div class="control-container">
+        <div class="button-group">
+            <button id="nextButton">Weiter</button>
+            <button id="rightButton">Richtig</button>
+            <button id="wrongButton">Falsch</button>
+            <button id="revealButton">Reveal Track</button>
+            <button id="winnerButton" style="background-color: #ffd700; color: var(--spotify-black);">Announce
+                Winner</button>
+        </div>
+
+        <div class="score-control">
+            <label for="playerName">Player Name:</label>
+            <input type="text" id="playerName" name="playerName">
+            <label for="playerScore">Player Score:</label>
+            <input type="text" id="playerScore" name="playerScore">
+            <button id="updateScoreButton">Update Score</button>
+        </div>
+
+        <button id="resetGameButton">Reset Game</button>
+    </div>
+
+    <script>
+        document.getElementById('updateScoreButton').addEventListener('click', function () {
+            let playerName = document.getElementById('playerName').value;
+            let playerScore = document.getElementById('playerScore').value;
+
+            fetch('/update-score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: playerName, score: playerScore }),
+            })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        });
+        document.getElementById('nextButton').addEventListener('click', function () {
+            fetch('/control/next', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+
+        document.getElementById('rightButton').addEventListener('click', function () {
+            fetch('/control/right', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+
+        document.getElementById('revealButton').addEventListener('click', function () {
+            fetch('/control/reveal', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    console.log('Track revealed successfully');
+                })
+                .catch((error) => {
+                    console.error('Error revealing track:', error);
+                });
+        });
+
+        document.getElementById('wrongButton').addEventListener('click', function () {
+            fetch('/control/wrong', { method: 'POST' })
+                .catch((error) => { console.error('Error:', error); });
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', function () {
+            fetch('/logout', { method: 'POST' })
+                .then(() => window.location.href = '/login.html');
+        });
+
+        document.getElementById('resetGameButton').addEventListener('click', function () {
+            if (confirm('Are you sure you want to reset the game? All scores will be set to 0.')) {
+                fetch('/control/reset-game', { method: 'POST' })
+                    .then(() => {
+                        console.log('Game reset successful');
+                    })
+                    .catch((error) => {
+                        console.error('Error resetting game:', error);
+                    });
+            }
+        });
+
+        document.getElementById('winnerButton').addEventListener('click', function () {
+            if (confirm('Are you sure you want to end the game and announce the winner?')) {
+                fetch('/control/get-winner', { method: 'POST' })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        console.log('Winner announced successfully');
+                    })
+                    .catch((error) => {
+                        console.error('Error announcing winner:', error);
+                    });
+            }
+        });
+    </script>
+</body>
+
+</html>

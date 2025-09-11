@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Song Quiz - Overview</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --spotify-green: #1DB954;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --bronze: #b08d57;
+            --black: #191414;
+            --white: #fff;
+        }
+
+        body {
+            font-family: 'Montserrat', 'Arial', sans-serif;
+            background: linear-gradient(120deg, #191414 0%, #1DB954 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.7;
+            background: radial-gradient(circle at 60% 40%, #FFD700 0%, #1DB954 40%, #FF69B4 70%, #191414 100%);
+            animation: floatGradient 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatGradient {
+            0% {
+                background-position: 60% 40%;
+                filter: blur(0px);
+                opacity: 0.7;
+            }
+
+            50% {
+                background-position: 40% 60%;
+                filter: blur(12px);
+                opacity: 0.9;
+            }
+
+            100% {
+                background-position: 70% 30%;
+                filter: blur(0px);
+                opacity: 0.7;
+            }
+        }
+
+
+        .container {
+            padding: 2rem;
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+            z-index: 1;
+            position: relative;
+        }
+
+        .track-info {
+            background: rgba(255, 255, 255, 0.93);
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .cover-art {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 1rem;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px #0002;
+        }
+
+        .cover-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .track-text {
+            margin: 0.5rem 0;
+            font-size: 1.5em;
+            color: var(--black);
+            font-family: 'Montserrat', 'Arial', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .track-name {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 2px 12px #FFD70044;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.93);
+            padding: 2rem 1.5rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            text-align: center;
+            transition: all 0.3s cubic-bezier(.77, 0, .18, 1);
+            font-family: 'Montserrat', 'Arial', sans-serif;
+            position: relative;
+        }
+
+        .player-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--spotify-green);
+            letter-spacing: 0.03em;
+        }
+
+        .player-score {
+            font-size: 2em;
+            color: var(--gold);
+            font-weight: 900;
+            text-shadow: 0 2px 8px #FFD70044;
+        }
+
+        .player-card.pressed {
+            border: 3px solid #ff9800;
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 24px #ff980088;
+        }
+
+        .player-card.right {
+            border: 3px solid var(--spotify-green);
+            background-color: rgba(29, 185, 84, 0.13);
+            box-shadow: 0 0 24px #1DB95444;
+        }
+
+        .player-card.wrong {
+            border: 3px solid #dc3545;
+            background-color: rgba(220, 53, 69, 0.13);
+            box-shadow: 0 0 24px #dc354544;
+        }
+
+        .player-card.disabled {
+            opacity: 0.7;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.04);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Mute overlay styling */
+        #muteOverlay {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="track-info">
+            <div class="cover-art">
+                <img id="albumCover" src="/cover.png" alt="Album Cover">
+            </div>
+            <div class="track-text track-name" id="trackName">???</div>
+            <div class="track-text" id="artistName">???</div>
+        </div>
+
+        <div class="players-grid" id="playersGrid">
+            <!-- Players will be inserted here -->
+        </div>
+
+        <div id="muteOverlay" style="
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    pointer-events: none;
+">
+            <span title="Click anywhere to enable sound">🔇</span>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket(`wss://${window.location.hostname}/`);
+
+        // Sound effects manager
+        const sounds = {
+            buzzer: new Audio('/sounds/buzzer.mp3'),
+            correct: new Audio('/sounds/correct.mp3'),
+            wrong: new Audio('/sounds/wrong.mp3'),
+        };
+
+        // Enable sound playback on first user interaction
+        document.addEventListener('click', initializeAudio);
+
+        function initializeAudio() {
+            // Create a silent audio context to enable sound
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+
+            // hide the mute overlay
+            document.getElementById('muteOverlay').style.display = 'none';
+
+            // Remove the initialization listener after first click
+            document.removeEventListener('click', initializeAudio);
+        }
+
+        Object.values(sounds).forEach(sound => {
+            sound.volume = 0.5; // Set volume to 30%
+        });
+
+        function playSound(soundName) {
+            try {
+                sounds[soundName].currentTime = 0; // Reset sound to start
+                sounds[soundName].play().catch(error => console.log('Sound playback failed:', error));
+            } catch (error) {
+                console.log('Error playing sound:', error);
+            }
+        }
+
+        function updatePlayers(players) {
+            const playersGrid = document.getElementById('playersGrid');
+            playersGrid.innerHTML = '';
+
+            players.sort((a, b) => b.score - a.score).forEach(player => {
+                const card = document.createElement('div');
+                card.id = `player-${player.buzzer}`;
+                card.className = 'player-card';
+                if (!player.canPress) card.classList.add('disabled');
+
+                card.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-score">${player.score}</div>
+                `;
+                playersGrid.appendChild(card);
+            });
+        }
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'players-updated') {
+                updatePlayers(data.players);
+            }
+            else if (data.type === 'new-song' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+
+                // Reset all player cards
+                document.querySelectorAll('.player-card').forEach(card => {
+                    card.classList.remove('pressed', 'right', 'wrong');
+                });
+            }
+            else if (data.type === 'buzzer-pressed') {
+                playSound('buzzer');
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playerCard.classList.add('pressed');
+                }
+            }
+            else if (data.songGuessed === true) {
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playSound('correct');
+                    playerCard.classList.remove('pressed');
+                    playerCard.classList.add('right');
+                }
+                if (data.trackInfo) {
+                    document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                    document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                    document.getElementById('artistName').textContent = data.trackInfo.artistName;
+                }
+            }
+            else if (data.songGuessed === false) {
+                const playerCard = document.getElementById(`player-${data.buzzer}`);
+                if (playerCard) {
+                    playSound('wrong');
+                    playerCard.classList.remove('pressed');
+                    playerCard.classList.add('wrong');
+                }
+            }
+            else if (data.type === 'game-winner') {
+                window.location.href = '/winner.html';
+            }
+            else if (data.type === 'track-revealed' && data.trackInfo) {
+                document.getElementById('albumCover').src = data.trackInfo.albumCoverUrl;
+                document.getElementById('trackName').textContent = data.trackInfo.trackName;
+                document.getElementById('artistName').textContent = data.trackInfo.artistName;
+
+                // Disable all player cards
+                document.querySelectorAll('.player-card').forEach(card => {
+                    card.classList.add('disabled');
+                });
+            }
+        };
+
+    </script>
+
+</body>
+
+</html>

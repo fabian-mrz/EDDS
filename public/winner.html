@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>🎉 Song Quiz - Winner! 🎉</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --spotify-green: #1DB954;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --bronze: #b08d57;
+            --black: #191414;
+            --white: #fff;
+        }
+
+        body {
+            font-family: 'Montserrat', 'Arial', sans-serif;
+            background: linear-gradient(120deg, #191414 0%, #1DB954 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.7;
+            background: radial-gradient(circle at 60% 40%, #FFD700 0%, #1DB954 40%, #FF69B4 70%, #191414 100%);
+            animation: floatGradient 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatGradient {
+            0% {
+                background-position: 60% 40%;
+                filter: blur(0px);
+                opacity: 0.7;
+            }
+
+            50% {
+                background-position: 40% 60%;
+                filter: blur(12px);
+                opacity: 0.9;
+            }
+
+            100% {
+                background-position: 70% 30%;
+                filter: blur(0px);
+                opacity: 0.7;
+            }
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 2;
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle, #fff 0%, #FFD700 80%, transparent 100%);
+            opacity: 0.7;
+            border-radius: 50%;
+            animation: sparkleMove 6s linear infinite;
+        }
+
+        @keyframes sparkleMove {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-40vh) scale(1.3);
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .winner-announcement {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .winner-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 2px 24px #FFD70088, 0 0 8px #fff;
+            letter-spacing: 0.08em;
+            margin-bottom: 2rem;
+            animation: titlePop 1.2s cubic-bezier(.77, 0, .18, 1);
+        }
+
+        @keyframes titlePop {
+            0% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+
+            70% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .podium-container {
+            --podium-height: 32rem;
+            --step-width: calc(var(--podium-height) * 0.7);
+            --step-radius: calc(var(--podium-height) / 3.2);
+            --step-font: calc(var(--podium-height) / 13);
+            --step-padding: calc(var(--podium-height) / 12);
+            --step-gap: calc(var(--podium-height) / 18);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: var(--step-gap);
+            height: var(--podium-height);
+            margin: 2rem auto 2rem auto;
+            position: relative;
+            perspective: 1800px;
+        }
+
+        .podium-step {
+            margin-left: calc(var(--step-gap) * -1);
+            margin-right: calc(var(--step-gap) * -1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            width: var(--step-width);
+            border-radius: var(--step-radius) var(--step-radius) 0 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 60%, rgba(220, 220, 220, 0.8) 100%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.08) 100%);
+            box-shadow:
+                0 24px 96px rgba(0, 0, 0, 0.48),
+                0 48px 192px 0 rgba(0, 0, 0, 0.32),
+                0 2px 0 0 rgba(255, 255, 255, 0.5) inset,
+                0 0 0 16px rgba(0, 0, 0, 0.10) inset;
+            font-size: var(--step-font);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            opacity: 0;
+            transform: translateY(80px) scale(0.92) rotateX(18deg);
+            filter: blur(8px);
+            transition:
+                opacity 0.8s cubic-bezier(.77, 0, .18, 1),
+                transform 0.8s cubic-bezier(.77, 0, .18, 1),
+                filter 0.8s cubic-bezier(.77, 0, .18, 1),
+                box-shadow 0.5s;
+            padding: var(--step-padding) 0 calc(var(--step-padding) * 0.7) 0;
+            text-align: center;
+            backdrop-filter: blur(2px);
+            position: relative;
+            overflow: visible;
+            border: 4px solid transparent;
+        }
+
+        .podium-step::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -28px;
+            transform: translateX(-50%);
+            width: 90%;
+            height: 32px;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.04) 100%);
+            opacity: 0.8;
+            filter: blur(4px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .podium-1 {
+            order: 2;
+            height: calc(var(--podium-height) * 0.7);
+            font-size: calc(var(--podium-height) / 9);
+            border-color: var(--gold);
+            color: var(--gold);
+            font-weight: 900;
+            z-index: 2;
+            box-shadow: 0 0 80px 0 #FFD70044;
+        }
+
+        .podium-2 {
+            order: 1;
+            height: calc(var(--podium-height) * 0.43);
+            font-size: calc(var(--podium-height) / 15);
+            border-color: var(--silver);
+            color: var(--silver);
+            z-index: 1;
+        }
+
+        .podium-3 {
+            order: 3;
+            height: calc(var(--podium-height) * 0.28);
+            font-size: calc(var(--podium-height) / 13);
+            border-color: var(--bronze);
+            color: var(--bronze);
+            z-index: 0;
+        }
+
+        .winner-avatar {
+            width: 4.5rem;
+            height: 4.5rem;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 16px #0002;
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            border: 3px solid #fff;
+            overflow: hidden;
+            animation: avatarPop 1.2s cubic-bezier(.77, 0, .18, 1);
+        }
+
+        @keyframes avatarPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+
+            70% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .winner-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: inherit;
+            text-shadow: 0 2px 8px #0002;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.03em;
+        }
+
+        .podium-1.epic {
+            box-shadow: 0 0 40px 8px #FFD70044, 0 0 0 0 #FFD700;
+            animation: winnerGlow 1.5s cubic-bezier(.77, 0, .18, 1) 1;
+        }
+
+        @keyframes winnerGlow {
+            0% {
+                box-shadow: 0 0 0 0 #FFD700;
+            }
+
+            60% {
+                box-shadow: 0 0 40px 8px #FFD70044, 0 0 0 0 #FFD700;
+            }
+
+            100% {
+                box-shadow: 0 0 30px 0 #FFD70033;
+            }
+        }
+
+        .confetti-holder {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        body.confetti-flash::before {
+            animation-play-state: paused;
+            opacity: 1;
+            filter: brightness(2) blur(0px);
+            transition: opacity 0.3s, filter 0.3s;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 9999;
+            animation: confettiBurst 4s cubic-bezier(.77, 0, .18, 1) forwards;
+        }
+
+        @keyframes confettiBurst {
+            0% {
+                transform: translateY(-10vh) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) scale(0.7) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .podium-1.pulse {
+            animation: winnerPulse 1.2s cubic-bezier(.77, 0, .18, 1) infinite;
+        }
+
+        @keyframes winnerPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 60px 0 #FFD70044;
+            }
+
+            50% {
+                transform: scale(1.06);
+                box-shadow: 0 0 90px 10px #FFD70088;
+            }
+        }
+
+        .fade-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(40, 40, 40, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+
+        .fade-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .play-again-box {
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            padding: 2.5rem 3.5rem;
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.7s cubic-bezier(.77, 0, .18, 1), transform 0.7s cubic-bezier(.77, 0, .18, 1);
+            will-change: opacity, transform;
+        }
+
+        .play-again-box.active {
+            opacity: 1;
+            transform: scale(1.08);
+            animation: playAgainBounce 1.2s cubic-bezier(.77, 0, .18, 1) 1;
+        }
+
+        @keyframes playAgainBounce {
+            0% {
+                transform: scale(0.8);
+            }
+
+            60% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1.08);
+            }
+        }
+
+        .play-again-emoji {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            animation: emojiWave 1.8s infinite;
+        }
+
+        @keyframes emojiWave {
+
+            0%,
+            100% {
+                transform: rotate(-10deg);
+            }
+
+            50% {
+                transform: rotate(18deg);
+            }
+        }
+
+        #playAgainBtn {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #1DB954 0%, #FFD700 100%);
+            color: #191414;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 2.5rem;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        #playAgainBtn:hover {
+            background: linear-gradient(90deg, #FFD700 0%, #1DB954 100%);
+            transform: scale(1.08);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="winner-announcement">
+        <div class="winner-title">🏆 Winner Podium 🏆</div>
+        <div class="podium-container">
+            <div class="podium-step podium-2" id="place2"></div>
+            <div class="podium-step podium-1" id="place1"></div>
+            <div class="podium-step podium-3" id="place3"></div>
+        </div>
+        <div class="confetti-holder"></div>
+        <div class="fade-overlay" id="fadeOverlay">
+            <div class="play-again-box" id="playAgainBox">
+                <span class="play-again-emoji">🔄</span>
+                <div style="font-size:1.5rem; font-weight:600; margin-bottom:1rem;">Ready for another round?</div>
+                <button id="playAgainBtn">Play Again!</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Sparkle background
+        for (let i = 0; i < 18; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = (Math.random() * 100) + 'vw';
+            sparkle.style.top = (Math.random() * 100) + 'vh';
+            sparkle.style.animationDelay = (Math.random() * 8) + 's';
+            document.body.appendChild(sparkle);
+        }
+
+        // Winner avatars (fallback emoji if no avatar)
+        const avatars = [
+            { name: "Karl", avatar: "" },    // 2nd
+            { name: "Fabi", avatar: "" },    // 1st
+            { name: "Güntha", avatar: "" }   // 3rd
+        ];
+        const fallbackEmojis = ["🥈", "🥇", "🥉"];
+
+        function showTop3() {
+            fetch('/get-top3')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.top3 && data.top3.length > 0) {
+                        for (let i = 0; i < 3; i++) {
+                            avatars[i].name = data.top3[i].name || avatars[i].name;
+                            avatars[i].avatar = data.top3[i].avatar || "";
+                        }
+                        animatePodium(avatars);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching top 3:', error);
+                });
+        }
+
+        function createAvatarHTML(avatar, fallbackEmoji) {
+            if (avatar) {
+                return `<img src="${avatar}" class="winner-avatar" alt="avatar">`;
+            } else {
+                return `<div class="winner-avatar">${fallbackEmoji}</div>`;
+            }
+        }
+
+        function animatePodium(top3) {
+            const place1 = document.getElementById('place1');
+            const place2 = document.getElementById('place2');
+            const place3 = document.getElementById('place3');
+            [place1, place2, place3].forEach(el => {
+                el.style.opacity = 0;
+                el.style.transform = "translateY(80px) scale(0.92)";
+                el.style.filter = "blur(8px)";
+                el.classList.remove('epic', 'pulse');
+                el.innerHTML = '';
+            });
+            // 3rd place (right)
+            place3.innerHTML = createAvatarHTML(top3[2].avatar, fallbackEmojis[2]) +
+                `<div class="winner-name">${top3[2].name}</div>`;
+            setTimeout(() => {
+                place3.style.opacity = 1;
+                place3.style.transform = "translateY(0) scale(1)";
+                place3.style.filter = "blur(0)";
+                // 2nd place (left)
+                place2.innerHTML = createAvatarHTML(top3[0].avatar, fallbackEmojis[0]) +
+                    `<div class="winner-name">${top3[0].name}</div>`;
+                setTimeout(() => {
+                    place2.style.opacity = 1;
+                    place2.style.transform = "translateY(0) scale(1)";
+                    place2.style.filter = "blur(0)";
+                    // 1st place (middle)
+                    place1.innerHTML = createAvatarHTML(top3[1].avatar, fallbackEmojis[1]) +
+                        `<div class="winner-name">${top3[1].name}</div>`;
+                    setTimeout(() => {
+                        place1.style.opacity = 1;
+                        place1.style.transform = "scale(1.12)";
+                        place1.style.filter = "blur(0)";
+                        place1.classList.add('epic');
+                        setTimeout(() => {
+                            place1.style.transform = "scale(1)";
+                            launchConfetti();
+                            setTimeout(() => {
+                                place1.classList.add('pulse');
+                            }, 800);
+                        }, 900);
+                    }, 1700);
+                }, 1700);
+            }, 1200);
+        }
+
+        function launchConfetti() {
+            // Flashlight effect: pause background and flash
+            document.body.classList.add('confetti-flash');
+            setTimeout(() => {
+                document.body.classList.remove('confetti-flash');
+            }, 900); // Flash duration
+
+            // ...existing confetti code...
+            const colors = ['#FFD700', '#1DB954', '#FF69B4', '#00CED1', '#FFA500'];
+            const holder = document.querySelector('.confetti-holder');
+            const duration = 8000;
+            const interval = 120;
+            let startTime = Date.now();
+            const confettiRain = setInterval(() => {
+                for (let i = 0; i < 8; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = (50 + Math.random() * 40 - 20) + 'vw';
+                    confetti.style.top = (5 + Math.random() * 8) + 'vh';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = (Math.random() * 0.7) + 's';
+                    holder.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 4200);
+                }
+                if (Date.now() - startTime > duration) {
+                    clearInterval(confettiRain);
+                }
+            }, interval);
+            // Show Play Again after confetti
+            setTimeout(() => {
+                document.getElementById('fadeOverlay').classList.add('active');
+                document.getElementById('playAgainBox').classList.add('active');
+            }, 15000);
+        }
+
+        // Start animation
+        showTop3();
+
+        // Winner sound, then sans.mp3 after 55s
+        const winnerSound = new Audio('/sounds/winner.mp3');
+        const sansSound = new Audio('/sounds/sans.mp3');
+        const cheerSound = new Audio('/sounds/cheer.mp3');
+        winnerSound.volume = 0.5;
+        sansSound.volume = 0.5;
+        cheerSound.volume = 0.5;
+        sansSound.loop = true;
+
+        winnerSound.play().catch(() => { });
+
+        setTimeout(() => {
+            cheerSound.play().catch(() => { });
+        }, 4000); 
+
+        setTimeout(() => {
+            sansSound.play().catch(() => { });
+        }, 55000);
+
+        // Play Again button reloads the page
+        document.getElementById('playAgainBtn').onclick = () => {
+            window.location.href = '/overview.html';
+        };
+    </script>
+</body>
+
+</html>

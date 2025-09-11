@@ -1,0 +1,13 @@
+
+.DS_Store
+cover.jpeg
+
+# Ignore Node.js files
+/node_modules/
+/package-lock.json
+/package.json
+*.ini
+public/buzzer2.html
+.cache
+public/spotify-icon.png
+*.mp3

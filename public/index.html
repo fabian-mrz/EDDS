@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Song Quiz - Join Game</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .container {
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .logo {
+            width: clamp(120px, 30vw, 200px);
+            height: auto;
+            margin-bottom: 2rem;
+            animation: logoFloat 6s ease-in-out infinite;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 7vw, 3.5rem);
+            margin-bottom: 2.5rem;
+            text-align: center;
+            color: var(--spotify-black);
+            font-weight: 800;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--spotify-green);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--spotify-green);
+            box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            border-radius: 12px;
+            min-height: 60px;
+            background: var(--spotify-green);
+            color: white;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(29, 185, 84, 0.3);
+            background: #1ed760;
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(29, 185, 84, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes logoFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) {
+            button:hover {
+                transform: none;
+                box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2);
+            }
+        }
+
+        /* Smaller screens */
+        @media (max-height: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .logo {
+                margin-bottom: 1rem;
+            }
+
+            h1 {
+                margin-bottom: 1.5rem;
+            }
+
+            input,
+            button {
+                padding: 0.8rem;
+                min-height: 50px;
+            }
+        }
+
+        /* Loading state */
+        button.loading {
+            background: #1db954;
+            pointer-events: none;
+            position: relative;
+        }
+
+        button.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes spin {
+            to {
+                transform: translateY(-50%) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img src="spotify-icon.png" alt="Quiz Logo" class="logo">
+        <h1>Song Quiz</h1>
+        <input type="text" id="name" placeholder="Enter your name" autocomplete="off">
+        <button onclick="joinBuzzer()">Join Game</button>
+        <button onclick="window.location.href = '/overview.html';">Overview</button>
+    </div>
+
+    <script>
+        function joinBuzzer() {
+            const nameInput = document.getElementById('name');
+            const button = document.querySelector('button');
+
+            if (!nameInput.value.trim()) {
+                nameInput.classList.add('shake');
+                setTimeout(() => nameInput.classList.remove('shake'), 600);
+                return;
+            }
+
+            button.classList.add('loading');
+            button.textContent = 'Joining...';
+
+            fetch('/join-buzzer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: nameInput.value.trim()
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.buzzer) {
+                        window.location.href = data.buzzer;
+                    } else {
+                        throw new Error('All buzzers are occupied');
+                    }
+                })
+                .catch(error => {
+                    button.classList.remove('loading');
+                    button.textContent = 'Join Game';
+                    alert(error.message || 'Failed to join game. Please try again.');
+                });
+        }
+
+        // Add enter key support
+        document.getElementById('name').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                joinBuzzer();
+            }
+        });
+
+        // Prevent form submission on mobile keyboards
+        document.addEventListener('submit', function (e) {
+            e.preventDefault();
+        });
+
+        window.onload = function () {
+            // Check for existing session
+            fetch('/check-session')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        window.location.href = data.buzzer;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,92 @@
+:root {
+    --spotify-green: #1DB954;
+    --spotify-green-hover: #1ed760;
+    --spotify-black: #191414;
+    --white: #ffffff;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, var(--spotify-green), var(--spotify-black));
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+h1 {
+    color: var(--spotify-black);
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid var(--spotify-green);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+input:focus {
+    border-color: var(--spotify-black);
+}
+
+button {
+    background-color: var(--spotify-green);
+    color: var(--white);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+
+
+button:active {
+    transform: translateY(0);
+}
+
+.logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1rem;
+}
+
+/* Control panel specific styles */
+.control-panel {
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.control-panel button {
+    width: auto;
+    min-width: 200px;
+}
+
+.danger-button {
+    background-color: #dc3545;
+}
+
+.danger-button:hover {
+    background-color: #bb2d3b;
+}
