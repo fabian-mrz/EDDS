@@ -15,25 +15,31 @@ ws.onmessage = function (event) {
         window.location.href = data.redirect;
     }
     else if (data.type === 'status-update') {
-
-        // Healthcheck: reset timer on each status-update
         clearTimeout(healthTimeout);
         healthTimeout = setTimeout(() => {
-            // If we miss two status-updates, reload to reconnect
             location.reload();
-        }, 12000); // 12 seconds allows for network jitter
-        // Find this player in the broadcasted players array
+        }, 12000);
+
         const playerStatus = data.players.find(p => p.buzzer === buzzerId);
         if (playerStatus) {
             canPress = playerStatus.canPress;
-            if (canPress) {
-                buzzerButton.classList.remove('disabled', 'waiting', 'right', 'wrong');
-            } else {
-                buzzerButton.classList.add('disabled');
+
+            // Only update if not in a special animation state
+            if (
+                !buzzerButton.classList.contains('waiting') &&
+                !buzzerButton.classList.contains('right') &&
+                !buzzerButton.classList.contains('wrong')
+            ) {
+                if (canPress) {
+                    buzzerButton.classList.remove('disabled');
+                } else {
+                    buzzerButton.classList.add('disabled');
+                }
             }
         }
         updateScoreboard(data.players);
     }
+
     else if (data.type === 'buzzer-pressed') {
         if (data.buzzer === buzzerId) {
             // This is the player who pressed - show waiting state
