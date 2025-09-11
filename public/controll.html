@@ -42,10 +42,34 @@
             background-color: #dc3545;
             margin-top: 2rem;
         }
+
+        #spotifyLoginButton {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            background: #1db954;
+            color: #fff;
+            padding: 0.7em 1.4em;
+            border-radius: 30px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 16px rgba(29, 185, 84, 0.12);
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        #spotifyLoginButton:hover {
+            background: #159c3a;
+        }
+
+        body {
+            position: relative;
+        }
     </style>
 </head>
 
 <body>
+    <a href="/spotify-login" id="spotifyLoginButton">Spotify Login</a>
     <div class="control-container">
         <div class="button-group">
             <button id="nextButton">Weiter</button>
