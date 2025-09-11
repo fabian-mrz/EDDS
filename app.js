@@ -331,6 +331,21 @@ app.post('/control/*', requireAdmin);
 app.get('/control.html', requireAdmin);
 app.get('/get-winner', requireAdmin);
 
+// Broadcast current buzzer status and players every 5 seconds
+setInterval(() => {
+    broadcast({
+        type: 'status-update',
+        buzzerPressed,
+        players: players.map(p => ({
+            name: p.name,
+            buzzer: p.buzzer,
+            score: p.score,
+            canPress: p.canPress
+        }))
+    });
+    console.log('Status update broadcasted.');
+}, 5000);
+
 app.post('/control/right', (req, res) => {
     try {
         console.log(players);

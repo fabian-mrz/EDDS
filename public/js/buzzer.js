@@ -1,7 +1,8 @@
 const ws = new WebSocket(`ws://${window.location.hostname}:3000`);
 
-let buzzerId; 
+let buzzerId;
 let canPress = true;
+let healthTimeout;
 
 ws.onmessage = function (event) {
     const data = JSON.parse(event.data);
@@ -11,6 +12,26 @@ ws.onmessage = function (event) {
         document.cookie = 'playerId=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         document.cookie = 'playerName=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         window.location.href = data.redirect;
+    }
+    else if (data.type === 'status-update') {
+
+        // Healthcheck: reset timer on each status-update
+        clearTimeout(healthTimeout);
+        healthTimeout = setTimeout(() => {
+            // If we miss two status-updates, reload to reconnect
+            location.reload();
+        }, 12000); // 12 seconds allows for network jitter
+        // Find this player in the broadcasted players array
+        const playerStatus = data.players.find(p => p.buzzer === buzzerId);
+        if (playerStatus) {
+            canPress = playerStatus.canPress;
+            if (canPress) {
+                buzzerButton.classList.remove('disabled', 'waiting', 'right', 'wrong');
+            } else {
+                buzzerButton.classList.add('disabled');
+            }
+        }
+        updateScoreboard(data.players);
     }
     else if (data.type === 'buzzer-pressed') {
         if (data.buzzer === buzzerId) {
@@ -101,7 +122,6 @@ ws.onmessage = function (event) {
             easing: 'ease-out'
         });
     }
-
     // Add this condition to handle player updates
     else if (data.type === 'players-updated') {
         updateScoreboard(data.players);
@@ -203,10 +223,13 @@ function setRandomGradient() {
     const color1 = randomColor();
     const color2 = randomColor();
     const color3 = randomColor();
-    document.getElementById('randomBg').style.background = 
-        `radial-gradient(circle at ${Math.random()*100}% ${Math.random()*100}%, ${color1} 0%, ${color2} 60%, ${color3} 100%)`;
+    document.getElementById('randomBg').style.background =
+        `radial-gradient(circle at ${Math.random() * 100}% ${Math.random() * 100}%, ${color1} 0%, ${color2} 60%, ${color3} 100%)`;
 }
 
+window.addEventListener('beforeunload', () => {
+    clearTimeout(healthTimeout);
+});
 
 addEventListener('DOMContentLoaded', (event) => {
     setRandomGradient();
